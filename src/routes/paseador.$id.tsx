@@ -76,6 +76,16 @@ function Detalle() {
           <p className="text-[15px] leading-relaxed text-ink">{walker.bio}</p>
         </div>
 
+        <div className="mt-4 px-5">
+          <div className={`flex items-start gap-2.5 rounded-2xl border p-3 ${walker.tiene_perros ? "border-brand/20 bg-brand-soft/40" : "border-coral/20 bg-coral-soft/40"}`}>
+            <span className="text-xl leading-none">🐕</span>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-ink-soft">¿Tiene perros?</p>
+              <p className="mt-0.5 text-[13px] leading-snug text-ink">{walker.texto_perros}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-5 px-5">
           <div className="flex flex-wrap gap-1.5">
             {walker.especialidades.map((s) => (
