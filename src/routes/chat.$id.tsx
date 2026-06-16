@@ -8,7 +8,6 @@ import { SafeImage } from "@/components/SafeImage";
 import {
   getWalker,
   type Walker,
-  CHAT_RESPUESTAS,
   RESPUESTAS_RAPIDAS,
 } from "@/data/walkers";
 
@@ -29,8 +28,38 @@ export const Route = createFileRoute("/chat/$id")({
 
 type Msg = { de: "yo" | "ellos"; texto: string; hora: string };
 
+const CHAT_STORE = new Map<string, Msg[]>();
+
 const ahora = () =>
   new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+
+function respuestaContextual(texto: string, first: string): string {
+  const t = texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (/(reactiv|ansios|miedos|nervios|tira|asustad)/.test(t))
+    return `Sin problema. Con perros así prefiero salir en solitario y por calles tranquilas, sin cruzarnos con otros peludos. En dos o tres paseos coge confianza 🐾`;
+  if (/(precio|treat|cuesta|cuanto vale|cobr|pago|dinero|euros|€)/.test(t))
+    return `Aquí no se paga con dinero — se agradece con un treat al final. Tú decides cuál y cuándo, sin presión.`;
+  if (/(disponib|hueco|hora|cuando|hoy|manana|esta semana|finde)/.test(t))
+    return `Esta semana tengo libres las tardes a partir de las 18:00 y los sábados por la mañana. ¿Qué hueco te encaja?`;
+  if (/(estancia|dormir|noche|fin de semana|vacacion|viaje|finde fuera)/.test(t))
+    return `Sí, ofrezco estancia en casa. Tengo espacio tranquilo y mando foto cada día. Dime las fechas y te confirmo el hueco 🏡`;
+  if (/(medica|pastilla|enferm|cuidad|insulina|gota)/.test(t))
+    return `Estoy acostumbrada a darles su medicación a su hora. Mándame las indicaciones por escrito y lo llevo controlado.`;
+  if (/(foto|video|ver|enseñ|mandar)/.test(t))
+    return `Por supuesto, te mando foto a mitad del paseo siempre. Verás lo bien que lo pasa 📸`;
+  if (/(primer dia|conocer|probar|prueba)/.test(t))
+    return `Lo suyo para el primer día es algo cortito, 20-30 min, para que me coja confianza y vea su ritmo. ¿Te parece?`;
+  if (/(grupo|otros perros|solitari)/.test(t))
+    return `Suelo pasear en solitario salvo que el perro sea muy sociable y lo pidáis. Así me concentro en él.`;
+  if (/(gracias|genial|perfecto|vale|ok|estupendo|guay)/.test(t))
+    return `¡A ti! Cualquier cosa me escribes por aquí 🐾`;
+  if (/(hola|buenas|saludos)/.test(t))
+    return `¡Hola! Cuéntame un poco sobre tu peludo: edad, raza y cómo es con otros perros y con la calle.`;
+  return `¡Anotado! Cuéntame algún detalle más y te confirmo, así me organizo bien.`;
+}
 
 function Chat() {
   const { walker } = Route.useLoaderData() as { walker: Walker };
@@ -38,30 +67,40 @@ function Chat() {
   const first = walker.nombre.split(" ")[0];
 
   const [mensajes, setMensajes] = useState<Msg[]>(() => {
+    const cached = CHAT_STORE.get(walker.id);
+    if (cached) return cached;
     const base = walker.chat_inicial ?? [
       { de: "ellos" as const, texto: `¡Hola! Soy ${first}. Cuéntame qué necesitas para tu peludo.` },
     ];
-    // espaciar horas hacia atrás
-    return base.map((m, i) => {
+    const initial = base.map((m, i) => {
       const d = new Date(Date.now() - (base.length - i) * 60_000);
       return { de: m.de, texto: m.texto, hora: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) };
     });
+    CHAT_STORE.set(walker.id, initial);
+    return initial;
   });
   const [draft, setDraft] = useState("");
   const [escribiendo, setEscribiendo] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    CHAT_STORE.set(walker.id, mensajes);
+    scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
+  }, [mensajes, walker.id]);
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
-  }, [mensajes, escribiendo]);
+  }, [escribiendo]);
 
-  const responder = () => {
+  const responder = (texto: string) => {
     setEscribiendo(true);
-    const respuesta = CHAT_RESPUESTAS[Math.floor(Math.random() * CHAT_RESPUESTAS.length)];
+    const respuesta = respuestaContextual(texto, first);
+    const delay = 1100 + Math.min(1200, respuesta.length * 18) + Math.random() * 400;
     setTimeout(() => {
       setEscribiendo(false);
       setMensajes((m) => [...m, { de: "ellos", texto: respuesta, hora: ahora() }]);
-    }, 1300 + Math.random() * 700);
+    }, delay);
   };
 
   const enviar = (texto: string) => {
@@ -69,7 +108,12 @@ function Chat() {
     if (!t) return;
     setMensajes((m) => [...m, { de: "yo", texto: t, hora: ahora() }]);
     setDraft("");
-    responder();
+    responder(t);
+  };
+
+  const sugerir = (texto: string) => {
+    setDraft(texto);
+    inputRef.current?.focus();
   };
 
   return (
@@ -143,7 +187,7 @@ function Chat() {
           {RESPUESTAS_RAPIDAS.map((r) => (
             <button
               key={r}
-              onClick={() => enviar(r)}
+              onClick={() => sugerir(r)}
               className="shrink-0 rounded-full border border-border bg-cream px-3 py-1.5 text-[12px] font-bold text-ink active:scale-95"
             >
               {r}
@@ -152,6 +196,7 @@ function Chat() {
         </div>
         <div className="flex items-center gap-2 px-4 py-2.5">
           <input
+            ref={inputRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && enviar(draft)}
@@ -174,7 +219,7 @@ function Chat() {
             search={{ q, modo }}
             className="flex w-full items-center justify-center gap-1.5 rounded-full bg-coral py-3 text-sm font-extrabold text-white shadow-[0_8px_18px_-8px_rgba(255,122,89,0.6)] active:scale-[0.98] transition"
           >
-            <CalendarDays className="h-4 w-4" /> Reservar un paseo o estancia
+            <CalendarDays className="h-4 w-4" /> Reservar paseo o estancia
           </Link>
         </div>
       </div>

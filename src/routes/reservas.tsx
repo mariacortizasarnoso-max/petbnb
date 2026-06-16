@@ -167,7 +167,11 @@ function ReservaCard({ reserva }: { reserva: Reserva }) {
                 <Star key={i} className={`h-3.5 w-3.5 ${i < reserva.valoracion! ? "fill-coral text-coral" : "text-ink-soft/30"}`} />
               ))}
             </div>
-            {reserva.treatEnviado && <span className="text-[11px] font-bold text-brand">Treat enviado 🦴 ✓</span>}
+            {reserva.treatEnviado && (
+              <span className="text-[11px] font-bold text-brand">
+                Treat enviado{reserva.treatNombre ? `: ${reserva.treatNombre}` : ""} 🦴
+              </span>
+            )}
           </div>
         )}
       </Link>

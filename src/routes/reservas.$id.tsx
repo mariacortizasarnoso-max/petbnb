@@ -1,10 +1,9 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BadgeCheck, MapPin, Clock, Star, X, MessageCircle } from "lucide-react";
+import { BadgeCheck, MapPin, Clock, Star, X, MessageCircle, Gift } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { TreatButton } from "@/components/TreatButton";
 import { getReserva, RESERVAS, type Reserva } from "@/data/reservas";
 import { getWalker } from "@/data/walkers";
 
@@ -29,12 +28,16 @@ function Detalle() {
 
   const [confirmCancelar, setConfirmCancelar] = useState(false);
   const [tempStars, setTempStars] = useState(0);
-  const [treatJustSent, setTreatJustSent] = useState(false);
+
+  // Refrescar desde RESERVAS por si volvemos del flujo de treats
+  const fresh = RESERVAS.find((r) => r.id === reserva.id);
+  if (fresh && (fresh.treatEnviado !== reserva.treatEnviado || fresh.treatNombre !== reserva.treatNombre)) {
+    setReserva(fresh);
+  }
 
   const cancelar = () => {
     setReserva({ ...reserva, estado: "cancelada", cancelTexto: "Cancelaste esta reserva.", nota: undefined });
     setConfirmCancelar(false);
-    // mutar también el array sembrado para que la lista refleje el cambio
     const idx = RESERVAS.findIndex((r) => r.id === reserva.id);
     if (idx >= 0) RESERVAS[idx] = { ...RESERVAS[idx], estado: "cancelada", cancelTexto: "Cancelaste esta reserva." };
   };
@@ -43,14 +46,6 @@ function Detalle() {
     setTempStars(n);
     const updated = { ...reserva, valoracion: n };
     setReserva(updated);
-    const idx = RESERVAS.findIndex((r) => r.id === reserva.id);
-    if (idx >= 0) RESERVAS[idx] = updated;
-  };
-
-  const enviarTreat = () => {
-    const updated = { ...reserva, treatEnviado: true };
-    setReserva(updated);
-    setTreatJustSent(true);
     const idx = RESERVAS.findIndex((r) => r.id === reserva.id);
     if (idx >= 0) RESERVAS[idx] = updated;
   };
@@ -106,8 +101,8 @@ function Detalle() {
               {reserva.recogida && (
                 <Row label="Recogida" value={reserva.recogida} icon={<MapPin className="h-3.5 w-3.5" />} />
               )}
-              {reserva.precioTreats && (
-                <Row label="A cambio de" value={`${reserva.precioTreats} ${reserva.precioTreats === 1 ? "treat" : "treats"} 🦴`} />
+              {reserva.treatEnviado && reserva.treatNombre && (
+                <Row label="Treat enviado" value={`${reserva.treatNombre} 🦴`} />
               )}
             </div>
 
@@ -149,19 +144,23 @@ function Detalle() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="card-soft mt-4 p-5 text-center">
             <div className="text-3xl">🦴</div>
             <h3 className="mt-1 font-extrabold text-ink">
-              {reserva.treatEnviado ? "Treat enviado" : "Dale las gracias con un treat"}
+              {reserva.treatEnviado ? `Le enviaste: ${reserva.treatNombre}` : "Envíale un treat a " + first}
             </h3>
             {!reserva.treatEnviado ? (
               <>
-                <p className="mt-1 text-sm text-ink-soft">Aquí no se paga: se agradece. {first} lo recibirá al instante.</p>
-                <div className="mt-4">
-                  <TreatButton variant="large" label="Enviar treat 🦴" onSent={enviarTreat} />
-                </div>
+                <p className="mt-1 text-sm text-ink-soft">Un detalle para agradecer su cariño con {reserva.perro}.</p>
+                <Link
+                  to="/treats/$id"
+                  params={{ id: walker.id }}
+                  search={{ reserva: reserva.id, perro: reserva.perro }}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-coral py-3.5 text-sm font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98]"
+                >
+                  <Gift className="h-4 w-4" /> Elegir un treat
+                </Link>
               </>
             ) : (
               <p className="mt-1 text-sm text-brand font-bold">{first} ha recibido tu treat 🦴 ✓</p>
             )}
-            {treatJustSent && <p className="mt-2 text-xs text-ink-soft">¡Gracias por reconocer su cariño!</p>}
           </motion.div>
         )}
 
