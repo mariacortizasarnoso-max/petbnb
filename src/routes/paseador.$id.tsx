@@ -1,11 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { z } from "zod";
-import { Star, BadgeCheck, MapPin, Clock, MessageCircle } from "lucide-react";
+import { Star, BadgeCheck, MapPin, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { TreatButton } from "@/components/TreatButton";
-import { getWalker } from "@/data/walkers";
+import { getWalker, type Walker, type Review } from "@/data/walkers";
 
 const search = z.object({
   q: z.string().default(""),

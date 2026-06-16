@@ -9,38 +9,103 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResultadosRouteImport } from './routes/resultados'
+import { Route as BuscandoRouteImport } from './routes/buscando'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PaseadorIdRouteImport } from './routes/paseador.$id'
+import { Route as ConfirmarIdRouteImport } from './routes/confirmar.$id'
 
+const ResultadosRoute = ResultadosRouteImport.update({
+  id: '/resultados',
+  path: '/resultados',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuscandoRoute = BuscandoRouteImport.update({
+  id: '/buscando',
+  path: '/buscando',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaseadorIdRoute = PaseadorIdRouteImport.update({
+  id: '/paseador/$id',
+  path: '/paseador/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmarIdRoute = ConfirmarIdRouteImport.update({
+  id: '/confirmar/$id',
+  path: '/confirmar/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/buscando': typeof BuscandoRoute
+  '/resultados': typeof ResultadosRoute
+  '/confirmar/$id': typeof ConfirmarIdRoute
+  '/paseador/$id': typeof PaseadorIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/buscando': typeof BuscandoRoute
+  '/resultados': typeof ResultadosRoute
+  '/confirmar/$id': typeof ConfirmarIdRoute
+  '/paseador/$id': typeof PaseadorIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/buscando': typeof BuscandoRoute
+  '/resultados': typeof ResultadosRoute
+  '/confirmar/$id': typeof ConfirmarIdRoute
+  '/paseador/$id': typeof PaseadorIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/buscando'
+    | '/resultados'
+    | '/confirmar/$id'
+    | '/paseador/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/buscando' | '/resultados' | '/confirmar/$id' | '/paseador/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/buscando'
+    | '/resultados'
+    | '/confirmar/$id'
+    | '/paseador/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuscandoRoute: typeof BuscandoRoute
+  ResultadosRoute: typeof ResultadosRoute
+  ConfirmarIdRoute: typeof ConfirmarIdRoute
+  PaseadorIdRoute: typeof PaseadorIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/resultados': {
+      id: '/resultados'
+      path: '/resultados'
+      fullPath: '/resultados'
+      preLoaderRoute: typeof ResultadosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buscando': {
+      id: '/buscando'
+      path: '/buscando'
+      fullPath: '/buscando'
+      preLoaderRoute: typeof BuscandoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +113,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/paseador/$id': {
+      id: '/paseador/$id'
+      path: '/paseador/$id'
+      fullPath: '/paseador/$id'
+      preLoaderRoute: typeof PaseadorIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirmar/$id': {
+      id: '/confirmar/$id'
+      path: '/confirmar/$id'
+      fullPath: '/confirmar/$id'
+      preLoaderRoute: typeof ConfirmarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuscandoRoute: BuscandoRoute,
+  ResultadosRoute: ResultadosRoute,
+  ConfirmarIdRoute: ConfirmarIdRoute,
+  PaseadorIdRoute: PaseadorIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
