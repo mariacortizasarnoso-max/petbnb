@@ -16,6 +16,7 @@ import { Route as PaseoIdRouteImport } from './routes/paseo.$id'
 import { Route as PaseadorIdRouteImport } from './routes/paseador.$id'
 import { Route as ConfirmarIdRouteImport } from './routes/confirmar.$id'
 import { Route as CompletadoIdRouteImport } from './routes/completado.$id'
+import { Route as ChatIdRouteImport } from './routes/chat.$id'
 
 const ResultadosRoute = ResultadosRouteImport.update({
   id: '/resultados',
@@ -52,11 +53,17 @@ const CompletadoIdRoute = CompletadoIdRouteImport.update({
   path: '/completado/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatIdRoute = ChatIdRouteImport.update({
+  id: '/chat/$id',
+  path: '/chat/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/resultados': typeof ResultadosRoute
+  '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/resultados': typeof ResultadosRoute
+  '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/resultados': typeof ResultadosRoute
+  '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/buscando'
     | '/resultados'
+    | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
     | '/paseador/$id'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/buscando'
     | '/resultados'
+    | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
     | '/paseador/$id'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/buscando'
     | '/resultados'
+    | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
     | '/paseador/$id'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuscandoRoute: typeof BuscandoRoute
   ResultadosRoute: typeof ResultadosRoute
+  ChatIdRoute: typeof ChatIdRoute
   CompletadoIdRoute: typeof CompletadoIdRoute
   ConfirmarIdRoute: typeof ConfirmarIdRoute
   PaseadorIdRoute: typeof PaseadorIdRoute
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompletadoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/$id': {
+      id: '/chat/$id'
+      path: '/chat/$id'
+      fullPath: '/chat/$id'
+      preLoaderRoute: typeof ChatIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -179,6 +199,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuscandoRoute: BuscandoRoute,
   ResultadosRoute: ResultadosRoute,
+  ChatIdRoute: ChatIdRoute,
   CompletadoIdRoute: CompletadoIdRoute,
   ConfirmarIdRoute: ConfirmarIdRoute,
   PaseadorIdRoute: PaseadorIdRoute,
