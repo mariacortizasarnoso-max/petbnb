@@ -85,13 +85,49 @@ const RECIBIDOS: TreatRecibido[] = [
     descripcion: "Un detalle del equipo para empezar con buena pata.",
     deNombre: "Equipo petbnb",
     fechaLabel: "Al darte de alta",
+    cantidad: 200,
+  },
+  {
+    id: "tr-002",
+    emoji: "🏅",
+    nombre: "Recompensa por 5 paseos",
+    descripcion: "Por completar tus 5 primeros paseos en la app.",
+    deNombre: "petbnb",
+    fechaLabel: "Hace 8 días",
+    cantidad: 80,
   },
 ];
+
+const CANJES: Canje[] = [
+  {
+    id: "cj-001",
+    productoId: "kw-snacks",
+    productoNombre: "Pack de snacks naturales",
+    marca: "Kiwoko",
+    emoji: "🍪",
+    costoTreats: 80,
+    fechaISO: new Date(Date.now() - 86_400_000 * 6).toISOString(),
+    fechaLabel: "Hace 6 días",
+    estado: "entregado",
+    direccion: "Calle Fuencarral 42, 3.º B · Madrid",
+  },
+];
+
+let SALDO = 240;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
 function emit() { listeners.forEach((l) => l()); }
 export function subscribeTreats(l: Listener) { listeners.add(l); return () => { listeners.delete(l); }; }
+
+export function getSaldo(): number { return SALDO; }
+export function addSaldo(n: number) { SALDO += n; emit(); }
+export function gastarSaldo(n: number): boolean {
+  if (SALDO < n) return false;
+  SALDO -= n;
+  emit();
+  return true;
+}
 
 export function getEnviados(): TreatEnviado[] {
   return [...ENVIADOS].sort((a, b) => b.fechaISO.localeCompare(a.fechaISO));
@@ -99,12 +135,17 @@ export function getEnviados(): TreatEnviado[] {
 export function getRecibidos(): TreatRecibido[] {
   return [...RECIBIDOS];
 }
+export function getCanjes(): Canje[] {
+  return [...CANJES].sort((a, b) => b.fechaISO.localeCompare(a.fechaISO));
+}
 
 export function totales() {
   return {
     enviados: ENVIADOS.length,
     recibidos: RECIBIDOS.length,
+    canjes: CANJES.length,
     importeEnviado: ENVIADOS.reduce((s, t) => s + t.precio, 0),
+    treatsRecibidos: RECIBIDOS.reduce((s, r) => s + (r.cantidad ?? 0), 0),
   };
 }
 
@@ -122,6 +163,20 @@ export function addTreatEnviado(t: Omit<TreatEnviado, "id" | "fechaISO" | "fecha
   return nuevo;
 }
 
+export function addCanje(c: Omit<Canje, "id" | "fechaISO" | "fechaLabel" | "estado">): Canje {
+  const id = "cj-" + Math.random().toString(36).slice(2, 8);
+  const nuevo: Canje = {
+    ...c,
+    id,
+    fechaISO: new Date().toISOString(),
+    fechaLabel: "Justo ahora",
+    estado: "en_camino",
+  };
+  CANJES.unshift(nuevo);
+  emit();
+  return nuevo;
+}
+
 export function marcarRecibido(id: string, foto: string, mensaje: string) {
   const idx = ENVIADOS.findIndex((t) => t.id === id);
   if (idx >= 0) {
@@ -129,6 +184,7 @@ export function marcarRecibido(id: string, foto: string, mensaje: string) {
     emit();
   }
 }
+
 
 // Fotos para confirmaciones de cuidadores
 export const FOTOS_CONFIRMACION = [
