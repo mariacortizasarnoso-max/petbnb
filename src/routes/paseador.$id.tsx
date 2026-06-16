@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { getWalker, type Walker } from "@/data/walkers";
-import { getWalker, type Walker } from "@/data/walkers";
 
 const search = z.object({
   q: z.string().default(""),
