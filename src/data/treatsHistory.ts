@@ -72,7 +72,7 @@ const RECIBIDOS: TreatRecibido[] = [
 type Listener = () => void;
 const listeners = new Set<Listener>();
 function emit() { listeners.forEach((l) => l()); }
-export function subscribeTreats(l: Listener) { listeners.add(l); return () => listeners.delete(l); }
+export function subscribeTreats(l: Listener) { listeners.add(l); return () => { listeners.delete(l); }; }
 
 export function getEnviados(): TreatEnviado[] {
   return [...ENVIADOS].sort((a, b) => b.fechaISO.localeCompare(a.fechaISO));

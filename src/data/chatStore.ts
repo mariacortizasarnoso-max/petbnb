@@ -25,7 +25,7 @@ export function pushMessage(walkerId: string, msg: ChatMsg) {
 
 export function subscribeChat(l: Listener) {
   listeners.add(l);
-  return () => listeners.delete(l);
+  return () => { listeners.delete(l); };
 }
 
 export function ahora(): string {
