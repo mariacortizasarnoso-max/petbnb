@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { Star, MapPin, BadgeCheck, Clock, ChevronRight } from "lucide-react";
+import { Star, MapPin, BadgeCheck, ChevronRight } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { ScoreRing } from "@/components/ScoreRing";
