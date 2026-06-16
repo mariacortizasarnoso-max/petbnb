@@ -104,6 +104,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-cream text-ink">
         <Outlet />
+        <BottomNav />
       </div>
       <Toaster position="top-center" richColors closeButton={false} />
     </QueryClientProvider>
