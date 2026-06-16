@@ -26,7 +26,8 @@ export const Route = createFileRoute("/paseador/$id")({
 });
 
 function Detalle() {
-  const { walker } = Route.useLoaderData();
+  const data = Route.useLoaderData() as { walker: Walker };
+  const walker = data.walker;
   const { q, modo } = Route.useSearch();
 
   return (
