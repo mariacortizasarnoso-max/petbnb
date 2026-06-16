@@ -47,9 +47,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservasIdRoute = ReservasIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ReservasRoute,
+  id: '/reservas/$id',
+  path: '/reservas/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PaseoIdRoute = PaseoIdRouteImport.update({
   id: '/paseo/$id',
@@ -81,7 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
-  '/reservas': typeof ReservasRouteWithChildren
+  '/reservas': typeof ReservasRoute
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
@@ -94,7 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
-  '/reservas': typeof ReservasRouteWithChildren
+  '/reservas': typeof ReservasRoute
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
@@ -108,7 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
-  '/reservas': typeof ReservasRouteWithChildren
+  '/reservas': typeof ReservasRoute
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
@@ -163,13 +163,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuscandoRoute: typeof BuscandoRoute
   MensajesRoute: typeof MensajesRoute
-  ReservasRoute: typeof ReservasRouteWithChildren
+  ReservasRoute: typeof ReservasRoute
   ResultadosRoute: typeof ResultadosRoute
   ChatIdRoute: typeof ChatIdRoute
   CompletadoIdRoute: typeof CompletadoIdRoute
   ConfirmarIdRoute: typeof ConfirmarIdRoute
   PaseadorIdRoute: typeof PaseadorIdRoute
   PaseoIdRoute: typeof PaseoIdRoute
+  ReservasIdRoute: typeof ReservasIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -211,10 +212,10 @@ declare module '@tanstack/react-router' {
     }
     '/reservas/$id': {
       id: '/reservas/$id'
-      path: '/$id'
+      path: '/reservas/$id'
       fullPath: '/reservas/$id'
       preLoaderRoute: typeof ReservasIdRouteImport
-      parentRoute: typeof ReservasRoute
+      parentRoute: typeof rootRouteImport
     }
     '/paseo/$id': {
       id: '/paseo/$id'
@@ -254,30 +255,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface ReservasRouteChildren {
-  ReservasIdRoute: typeof ReservasIdRoute
-}
-
-const ReservasRouteChildren: ReservasRouteChildren = {
-  ReservasIdRoute: ReservasIdRoute,
-}
-
-const ReservasRouteWithChildren = ReservasRoute._addFileChildren(
-  ReservasRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuscandoRoute: BuscandoRoute,
   MensajesRoute: MensajesRoute,
-  ReservasRoute: ReservasRouteWithChildren,
+  ReservasRoute: ReservasRoute,
   ResultadosRoute: ResultadosRoute,
   ChatIdRoute: ChatIdRoute,
   CompletadoIdRoute: CompletadoIdRoute,
   ConfirmarIdRoute: ConfirmarIdRoute,
   PaseadorIdRoute: PaseadorIdRoute,
   PaseoIdRoute: PaseoIdRoute,
+  ReservasIdRoute: ReservasIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
