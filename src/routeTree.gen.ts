@@ -10,8 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultadosRouteImport } from './routes/resultados'
+import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as BuscandoRouteImport } from './routes/buscando'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReservasIdRouteImport } from './routes/reservas.$id'
 import { Route as PaseoIdRouteImport } from './routes/paseo.$id'
 import { Route as PaseadorIdRouteImport } from './routes/paseador.$id'
 import { Route as ConfirmarIdRouteImport } from './routes/confirmar.$id'
@@ -23,6 +25,11 @@ const ResultadosRoute = ResultadosRouteImport.update({
   path: '/resultados',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReservasRoute = ReservasRouteImport.update({
+  id: '/reservas',
+  path: '/reservas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuscandoRoute = BuscandoRouteImport.update({
   id: '/buscando',
   path: '/buscando',
@@ -32,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ReservasIdRoute = ReservasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ReservasRoute,
 } as any)
 const PaseoIdRoute = PaseoIdRouteImport.update({
   id: '/paseo/$id',
@@ -62,70 +74,83 @@ const ChatIdRoute = ChatIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
+  '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
+  '/reservas/$id': typeof ReservasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
+  '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
+  '/reservas/$id': typeof ReservasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
+  '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
+  '/reservas/$id': typeof ReservasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/buscando'
+    | '/reservas'
     | '/resultados'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
     | '/paseador/$id'
     | '/paseo/$id'
+    | '/reservas/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/buscando'
+    | '/reservas'
     | '/resultados'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
     | '/paseador/$id'
     | '/paseo/$id'
+    | '/reservas/$id'
   id:
     | '__root__'
     | '/'
     | '/buscando'
+    | '/reservas'
     | '/resultados'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
     | '/paseador/$id'
     | '/paseo/$id'
+    | '/reservas/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuscandoRoute: typeof BuscandoRoute
+  ReservasRoute: typeof ReservasRouteWithChildren
   ResultadosRoute: typeof ResultadosRoute
   ChatIdRoute: typeof ChatIdRoute
   CompletadoIdRoute: typeof CompletadoIdRoute
@@ -143,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultadosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reservas': {
+      id: '/reservas'
+      path: '/reservas'
+      fullPath: '/reservas'
+      preLoaderRoute: typeof ReservasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/buscando': {
       id: '/buscando'
       path: '/buscando'
@@ -156,6 +188,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/reservas/$id': {
+      id: '/reservas/$id'
+      path: '/$id'
+      fullPath: '/reservas/$id'
+      preLoaderRoute: typeof ReservasIdRouteImport
+      parentRoute: typeof ReservasRoute
     }
     '/paseo/$id': {
       id: '/paseo/$id'
@@ -195,9 +234,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ReservasRouteChildren {
+  ReservasIdRoute: typeof ReservasIdRoute
+}
+
+const ReservasRouteChildren: ReservasRouteChildren = {
+  ReservasIdRoute: ReservasIdRoute,
+}
+
+const ReservasRouteWithChildren = ReservasRoute._addFileChildren(
+  ReservasRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuscandoRoute: BuscandoRoute,
+  ReservasRoute: ReservasRouteWithChildren,
   ResultadosRoute: ResultadosRoute,
   ChatIdRoute: ChatIdRoute,
   CompletadoIdRoute: CompletadoIdRoute,
@@ -208,3 +260,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
