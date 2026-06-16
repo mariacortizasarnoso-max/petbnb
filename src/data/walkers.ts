@@ -18,6 +18,12 @@ export type Walker = {
   galeria: string[];
   resenas: Review[];
   nota_recogida: string;
+  tiene_perros: boolean;
+  texto_perros: string;
+  dias_no_disponibles: number[];
+  ofrece_estancia: boolean;
+  precio_estancia_noche?: number;
+  chat_inicial?: { de: "ellos" | "yo"; texto: string }[];
 };
 
 const u = (q: string, sig: number) =>
