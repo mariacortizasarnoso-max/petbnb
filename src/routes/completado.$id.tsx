@@ -1,11 +1,10 @@
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, Gift } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { TreatButton } from "@/components/TreatButton";
 import { WalkMapClient } from "@/components/WalkMapClient";
 import { getWalker, type Walker } from "@/data/walkers";
 
@@ -30,6 +29,7 @@ function Completado() {
   const { perro, duracion, km } = Route.useSearch();
   const navigate = useNavigate();
   const [stars, setStars] = useState(0);
+  const first = walker.nombre.split(" ")[0];
   const endTime = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -51,7 +51,7 @@ function Completado() {
               ✓
             </motion.div>
             <h1 className="mt-3 text-xl font-black">¡Paseo completado!</h1>
-            <p className="mt-1 text-sm opacity-90">{perro} ha vuelto sana y salva.</p>
+            <p className="mt-1 text-sm opacity-90">{first} ha dejado a {perro} sana y salva.</p>
           </div>
 
           <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
@@ -67,7 +67,7 @@ function Completado() {
           <div className="flex items-start gap-3 p-4">
             <SafeImage src={walker.foto} alt={walker.nombre} rounded fallbackText={walker.nombre} className="h-10 w-10 shrink-0" />
             <div className="rounded-2xl bg-cream-deep/60 p-3 text-[14px] leading-snug text-ink">
-              <span className="font-bold">{walker.nombre.split(" ")[0]}: </span>
+              <span className="font-bold">{first}: </span>
               {perro} ha vuelto feliz y agotada. ¡Un encanto de perra! 🥰
             </div>
           </div>
@@ -77,17 +77,19 @@ function Completado() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="card-soft mt-4 p-5"
+          className="card-soft mt-4 p-5 text-center"
         >
-          <div className="text-center">
-            <div className="text-3xl">🦴</div>
-            <h2 className="mt-1 text-lg font-extrabold">Dale las gracias con un treat</h2>
-            <p className="mt-1 text-sm text-ink-soft">Aquí no se paga: se agradece. {walker.nombre.split(" ")[0]} lo recibirá al instante.</p>
-          </div>
-          <div className="mt-4">
-            <TreatButton variant="large" label="Dale las gracias con un treat 🦴" onSent={() => {/* */}} />
-          </div>
-          <p className="mt-2 text-center text-xs text-ink-soft">{walker.nombre.split(" ")[0]} ha recibido tu treat 🦴</p>
+          <div className="text-3xl">🦴</div>
+          <h2 className="mt-1 text-lg font-extrabold">Envíale un treat a {first}</h2>
+          <p className="mt-1 text-sm text-ink-soft">Un detalle para agradecer su cariño con {perro}.</p>
+          <Link
+            to="/treats/$id"
+            params={{ id: walker.id }}
+            search={{ perro }}
+            className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-coral py-4 text-base font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98] transition"
+          >
+            <Gift className="h-5 w-5" /> Elegir un treat
+          </Link>
         </motion.div>
 
         <motion.div
@@ -110,10 +112,10 @@ function Completado() {
         </motion.div>
 
         <button
-          onClick={() => navigate({ to: "/" })}
+          onClick={() => navigate({ to: "/reservas" })}
           className="mt-5 w-full rounded-full border border-border bg-white py-3 text-sm font-bold text-ink"
         >
-          Volver al inicio
+          Ir a mis reservas
         </button>
       </main>
     </div>

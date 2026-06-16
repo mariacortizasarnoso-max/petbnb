@@ -14,11 +14,12 @@ export type Reserva = {
   estado: EstadoReserva;
   nota?: string;
   treatEnviado?: boolean;
+  treatNombre?: string;
   valoracion?: number;
   cancelTexto?: string;
   precioTreats?: number;
   recogida?: string;
-  inicioISO?: string; // para "en curso"
+  inicioISO?: string;
 };
 
 export const RESERVAS: Reserva[] = [
@@ -34,7 +35,6 @@ export const RESERVAS: Reserva[] = [
     estado: "en_curso",
     nota: "Ana ha salido con Nala hace 10 min. Te avisará con foto a mitad del paseo.",
     recogida: "Tu portal · Chamberí",
-    precioTreats: 1,
     inicioISO: new Date(Date.now() - 10 * 60_000).toISOString(),
   },
   {
@@ -49,7 +49,6 @@ export const RESERVAS: Reserva[] = [
     estado: "confirmada",
     nota: "Lucía recogerá a Nala en el portal. Si llueve mucho, te escribirá para reorganizar.",
     recogida: "Tu portal · Malasaña",
-    precioTreats: 1,
   },
   {
     id: "r-003",
@@ -62,7 +61,6 @@ export const RESERVAS: Reserva[] = [
     estado: "confirmada",
     nota: "Carlos tendrá la casa lista para Toby. Acuérdate de llevar su pienso y su mantita.",
     recogida: "Casa de Carlos · Arganzuela",
-    precioTreats: 69,
   },
   {
     id: "r-101",
@@ -77,7 +75,7 @@ export const RESERVAS: Reserva[] = [
     nota: "Nala volvió feliz y agotada. ¡Un encanto de perra!",
     valoracion: 5,
     treatEnviado: true,
-    precioTreats: 1,
+    treatNombre: "Pack de premios",
   },
   {
     id: "r-102",
@@ -89,7 +87,6 @@ export const RESERVAS: Reserva[] = [
     noches: 2,
     estado: "completada",
     nota: "Toby se portó genial, durmió como un lirón y se hizo amigo de Coco enseguida.",
-    precioTreats: 46,
   },
   {
     id: "r-103",
@@ -102,7 +99,6 @@ export const RESERVAS: Reserva[] = [
     duracion: 60,
     estado: "cancelada",
     cancelTexto: "Cancelaste esta reserva la noche anterior.",
-    precioTreats: 1,
   },
 ];
 
