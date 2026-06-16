@@ -220,7 +220,7 @@ function TreatsCatalogo() {
                   Ver respuesta en el chat
                 </button>
                 <button
-                  onClick={() => navigate({ to: "/treats" })}
+                  onClick={() => navigate({ to: "/mis-treats" })}
                   className="w-full rounded-full border border-border bg-white py-3.5 text-sm font-bold text-ink"
                 >
                   Ver mis treats
