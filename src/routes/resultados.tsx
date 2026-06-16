@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { Star, MapPin, BadgeCheck, ChevronRight } from "lucide-react";
+import { Star, MapPin, BadgeCheck, ChevronRight, MessageCircle } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { ScoreRing } from "@/components/ScoreRing";
-import { TreatButton } from "@/components/TreatButton";
 import { matchWalkers } from "@/lib/matching";
 
 const search = z.object({
@@ -121,9 +120,14 @@ function Resultados() {
               </Link>
 
               <div className="flex items-center gap-2 border-t border-border px-4 py-3">
-                <div className="flex-1">
-                  <TreatButton />
-                </div>
+                <Link
+                  to="/chat/$id"
+                  params={{ id: m.walker.id }}
+                  search={{ q, modo }}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-white px-4 py-2 text-sm font-bold text-ink"
+                >
+                  <MessageCircle className="h-4 w-4" /> Mensaje
+                </Link>
                 <Link
                   to="/paseador/$id"
                   params={{ id: m.walker.id }}
