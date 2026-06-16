@@ -38,11 +38,6 @@ const MisTreatsRoute = MisTreatsRouteImport.update({
   path: '/mis-treats',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MisTreatsRoute = MisTreatsRouteImport.update({
-  id: '/mis-treats',
-  path: '/mis-treats',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const MensajesRoute = MensajesRouteImport.update({
   id: '/mensajes',
   path: '/mensajes',
