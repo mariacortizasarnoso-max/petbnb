@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Star, BadgeCheck, MapPin, Calendar, Clock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { getWalker } from "@/data/walkers";
+import { getWalker, type Walker } from "@/data/walkers";
 
 const search = z.object({
   q: z.string().default(""),
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/confirmar/$id")({
 });
 
 function Confirmar() {
-  const { walker } = Route.useLoaderData();
+  const { walker } = Route.useLoaderData() as { walker: Walker };
   const { q, modo } = Route.useSearch();
   const navigate = useNavigate();
   const [duracion, setDuracion] = useState<30 | 45 | 60>(45);
