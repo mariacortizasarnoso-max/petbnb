@@ -1,14 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Search, CalendarDays, MessageCircle, Gift } from "lucide-react";
+import { Search, CalendarDays, MessageCircle, Gift, ShoppingBag } from "lucide-react";
 
 const ITEMS = [
   { to: "/" as const, label: "Buscar", icon: Search, match: (p: string) => p === "/" },
   { to: "/reservas" as const, label: "Reservas", icon: CalendarDays, match: (p: string) => p.startsWith("/reservas") },
   { to: "/mensajes" as const, label: "Mensajes", icon: MessageCircle, match: (p: string) => p.startsWith("/mensajes") || p.startsWith("/chat") },
+  { to: "/tienda" as const, label: "Tienda", icon: ShoppingBag, match: (p: string) => p.startsWith("/tienda") || p.startsWith("/canjear") },
   { to: "/mis-treats" as const, label: "Mis treats", icon: Gift, match: (p: string) => p.startsWith("/mis-treats") },
 ];
 
-const HIDE_ON = ["/chat/", "/paseo/", "/buscando", "/confirmar/", "/completado/", "/treats/"];
+const HIDE_ON = ["/chat/", "/paseo/", "/buscando", "/confirmar/", "/completado/", "/treats/", "/canjear/"];
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

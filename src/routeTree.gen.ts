@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TiendaRouteImport } from './routes/tienda'
 import { Route as ResultadosRouteImport } from './routes/resultados'
 import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as MisTreatsRouteImport } from './routes/mis-treats'
@@ -22,7 +23,13 @@ import { Route as PaseadorIdRouteImport } from './routes/paseador.$id'
 import { Route as ConfirmarIdRouteImport } from './routes/confirmar.$id'
 import { Route as CompletadoIdRouteImport } from './routes/completado.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
+import { Route as CanjearIdRouteImport } from './routes/canjear.$id'
 
+const TiendaRoute = TiendaRouteImport.update({
+  id: '/tienda',
+  path: '/tienda',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultadosRoute = ResultadosRouteImport.update({
   id: '/resultados',
   path: '/resultados',
@@ -88,6 +95,11 @@ const ChatIdRoute = ChatIdRouteImport.update({
   path: '/chat/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CanjearIdRoute = CanjearIdRouteImport.update({
+  id: '/canjear/$id',
+  path: '/canjear/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +108,8 @@ export interface FileRoutesByFullPath {
   '/mis-treats': typeof MisTreatsRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
+  '/tienda': typeof TiendaRoute
+  '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -111,6 +125,8 @@ export interface FileRoutesByTo {
   '/mis-treats': typeof MisTreatsRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
+  '/tienda': typeof TiendaRoute
+  '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -127,6 +143,8 @@ export interface FileRoutesById {
   '/mis-treats': typeof MisTreatsRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
+  '/tienda': typeof TiendaRoute
+  '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -144,6 +162,8 @@ export interface FileRouteTypes {
     | '/mis-treats'
     | '/reservas'
     | '/resultados'
+    | '/tienda'
+    | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -159,6 +179,8 @@ export interface FileRouteTypes {
     | '/mis-treats'
     | '/reservas'
     | '/resultados'
+    | '/tienda'
+    | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -174,6 +196,8 @@ export interface FileRouteTypes {
     | '/mis-treats'
     | '/reservas'
     | '/resultados'
+    | '/tienda'
+    | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -190,6 +214,8 @@ export interface RootRouteChildren {
   MisTreatsRoute: typeof MisTreatsRoute
   ReservasRoute: typeof ReservasRouteWithChildren
   ResultadosRoute: typeof ResultadosRoute
+  TiendaRoute: typeof TiendaRoute
+  CanjearIdRoute: typeof CanjearIdRoute
   ChatIdRoute: typeof ChatIdRoute
   CompletadoIdRoute: typeof CompletadoIdRoute
   ConfirmarIdRoute: typeof ConfirmarIdRoute
@@ -200,6 +226,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tienda': {
+      id: '/tienda'
+      path: '/tienda'
+      fullPath: '/tienda'
+      preLoaderRoute: typeof TiendaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resultados': {
       id: '/resultados'
       path: '/resultados'
@@ -291,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/canjear/$id': {
+      id: '/canjear/$id'
+      path: '/canjear/$id'
+      fullPath: '/canjear/$id'
+      preLoaderRoute: typeof CanjearIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -313,6 +353,8 @@ const rootRouteChildren: RootRouteChildren = {
   MisTreatsRoute: MisTreatsRoute,
   ReservasRoute: ReservasRouteWithChildren,
   ResultadosRoute: ResultadosRoute,
+  TiendaRoute: TiendaRoute,
+  CanjearIdRoute: CanjearIdRoute,
   ChatIdRoute: ChatIdRoute,
   CompletadoIdRoute: CompletadoIdRoute,
   ConfirmarIdRoute: ConfirmarIdRoute,
