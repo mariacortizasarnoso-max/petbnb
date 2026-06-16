@@ -13,7 +13,7 @@ import {
 } from "@/data/treatsHistory";
 import { getWalker } from "@/data/walkers";
 
-export const Route = createFileRoute("/treats")({
+export const Route = createFileRoute("/mis-treats")({
   component: MisTreats,
 });
 

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TreatsRouteImport } from './routes/treats'
 import { Route as ResultadosRouteImport } from './routes/resultados'
 import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as MensajesRouteImport } from './routes/mensajes'
@@ -22,6 +23,11 @@ import { Route as ConfirmarIdRouteImport } from './routes/confirmar.$id'
 import { Route as CompletadoIdRouteImport } from './routes/completado.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 
+const TreatsRoute = TreatsRouteImport.update({
+  id: '/treats',
+  path: '/treats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultadosRoute = ResultadosRouteImport.update({
   id: '/resultados',
   path: '/resultados',
@@ -48,9 +54,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const TreatsIdRoute = TreatsIdRouteImport.update({
-  id: '/treats/$id',
-  path: '/treats/$id',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TreatsRoute,
 } as any)
 const ReservasIdRoute = ReservasIdRouteImport.update({
   id: '/$id',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/mensajes': typeof MensajesRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
+  '/treats': typeof TreatsRouteWithChildren
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/mensajes': typeof MensajesRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
+  '/treats': typeof TreatsRouteWithChildren
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/mensajes': typeof MensajesRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
+  '/treats': typeof TreatsRouteWithChildren
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/mensajes'
     | '/reservas'
     | '/resultados'
+    | '/treats'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/mensajes'
     | '/reservas'
     | '/resultados'
+    | '/treats'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/mensajes'
     | '/reservas'
     | '/resultados'
+    | '/treats'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -177,16 +189,23 @@ export interface RootRouteChildren {
   MensajesRoute: typeof MensajesRoute
   ReservasRoute: typeof ReservasRouteWithChildren
   ResultadosRoute: typeof ResultadosRoute
+  TreatsRoute: typeof TreatsRouteWithChildren
   ChatIdRoute: typeof ChatIdRoute
   CompletadoIdRoute: typeof CompletadoIdRoute
   ConfirmarIdRoute: typeof ConfirmarIdRoute
   PaseadorIdRoute: typeof PaseadorIdRoute
   PaseoIdRoute: typeof PaseoIdRoute
-  TreatsIdRoute: typeof TreatsIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/treats': {
+      id: '/treats'
+      path: '/treats'
+      fullPath: '/treats'
+      preLoaderRoute: typeof TreatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resultados': {
       id: '/resultados'
       path: '/resultados'
@@ -224,10 +243,10 @@ declare module '@tanstack/react-router' {
     }
     '/treats/$id': {
       id: '/treats/$id'
-      path: '/treats/$id'
+      path: '/$id'
       fullPath: '/treats/$id'
       preLoaderRoute: typeof TreatsIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof TreatsRoute
     }
     '/reservas/$id': {
       id: '/reservas/$id'
@@ -286,18 +305,29 @@ const ReservasRouteWithChildren = ReservasRoute._addFileChildren(
   ReservasRouteChildren,
 )
 
+interface TreatsRouteChildren {
+  TreatsIdRoute: typeof TreatsIdRoute
+}
+
+const TreatsRouteChildren: TreatsRouteChildren = {
+  TreatsIdRoute: TreatsIdRoute,
+}
+
+const TreatsRouteWithChildren =
+  TreatsRoute._addFileChildren(TreatsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuscandoRoute: BuscandoRoute,
   MensajesRoute: MensajesRoute,
   ReservasRoute: ReservasRouteWithChildren,
   ResultadosRoute: ResultadosRoute,
+  TreatsRoute: TreatsRouteWithChildren,
   ChatIdRoute: ChatIdRoute,
   CompletadoIdRoute: CompletadoIdRoute,
   ConfirmarIdRoute: ConfirmarIdRoute,
   PaseadorIdRoute: PaseadorIdRoute,
   PaseoIdRoute: PaseoIdRoute,
-  TreatsIdRoute: TreatsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
