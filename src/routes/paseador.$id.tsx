@@ -1,10 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { z } from "zod";
-import { Star, BadgeCheck, MapPin, MessageCircle } from "lucide-react";
+import { Star, BadgeCheck, MapPin, MessageCircle, CalendarDays } from "lucide-react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { TreatButton } from "@/components/TreatButton";
 import { getWalker, type Walker } from "@/data/walkers";
 
 const search = z.object({
@@ -76,6 +75,16 @@ function Detalle() {
           <p className="text-[15px] leading-relaxed text-ink">{walker.bio}</p>
         </div>
 
+        <div className="mt-4 px-5">
+          <div className={`flex items-start gap-2.5 rounded-2xl border p-3 ${walker.tiene_perros ? "border-brand/20 bg-brand-soft/40" : "border-coral/20 bg-coral-soft/40"}`}>
+            <span className="text-xl leading-none">🐕</span>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-ink-soft">¿Tiene perros?</p>
+              <p className="mt-0.5 text-[13px] leading-snug text-ink">{walker.texto_perros}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-5 px-5">
           <div className="flex flex-wrap gap-1.5">
             {walker.especialidades.map((s) => (
@@ -130,16 +139,21 @@ function Detalle() {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center gap-2 px-5 py-3">
-          <div className="w-32">
-            <TreatButton />
-          </div>
+          <Link
+            to="/chat/$id"
+            params={{ id: walker.id }}
+            search={{ q, modo }}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-full border-2 border-brand bg-white py-3 font-extrabold text-brand active:scale-[0.98] transition"
+          >
+            <MessageCircle className="h-4 w-4" /> Enviar mensaje
+          </Link>
           <Link
             to="/confirmar/$id"
             params={{ id: walker.id }}
             search={{ q, modo }}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-brand py-3 font-extrabold text-white shadow-[0_8px_18px_-8px_rgba(46,125,91,0.6)] active:scale-[0.98] transition"
           >
-            <MessageCircle className="h-4 w-4" /> Contactar
+            <CalendarDays className="h-4 w-4" /> Reservar
           </Link>
         </div>
       </div>

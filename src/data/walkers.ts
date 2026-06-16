@@ -18,6 +18,12 @@ export type Walker = {
   galeria: string[];
   resenas: Review[];
   nota_recogida: string;
+  tiene_perros?: boolean;
+  texto_perros?: string;
+  dias_no_disponibles?: number[];
+  ofrece_estancia?: boolean;
+  precio_estancia_noche?: number;
+  chat_inicial?: { de: "ellos" | "yo"; texto: string }[];
 };
 
 const u = (q: string, sig: number) =>
@@ -322,6 +328,149 @@ export const WALKERS: Walker[] = [
     ],
     nota_recogida: "¡Allá voy! Hoy haremos buenas fotos. 📸",
   },
+];
+
+type Extra = {
+  tiene_perros: boolean;
+  texto_perros: string;
+  dias_no_disponibles: number[];
+  ofrece_estancia: boolean;
+  precio_estancia_noche?: number;
+  chat_inicial: { de: "ellos" | "yo"; texto: string }[];
+};
+
+const EXTRAS: Record<string, Extra> = {
+  ana: {
+    tiene_perros: false,
+    texto_perros: "No tiene perros propios, así tu perro recibe toda su atención durante el paseo.",
+    dias_no_disponibles: [2, 9, 16, 23, 30],
+    ofrece_estancia: true, precio_estancia_noche: 22,
+    chat_inicial: [
+      { de: "yo", texto: "¡Hola Ana! Tengo una golden de 4 años, Nala. Es un poco reactiva con otros perros. ¿Te vendría bien pasearla entre semana por las tardes?" },
+      { de: "ellos", texto: "¡Hola! Claro. Con perros reactivos prefiero pasear siempre en solitario y por zonas tranquilas, así va relajada. ¿Sobre qué hora te encaja?" },
+      { de: "yo", texto: "Sobre las 18:30 estaría genial." },
+      { de: "ellos", texto: "Perfecto, las tardes las tengo libres. ¿Te parece si el primer día hacemos un paseo corto para que Nala me coja confianza? 🐾" },
+    ],
+  },
+  lucia: {
+    tiene_perros: true,
+    texto_perros: "Convive con Mara, una galga adoptada de 7 años — está acostumbrada a la convivencia entre perros tranquilos.",
+    dias_no_disponibles: [1, 5, 12, 19, 26],
+    ofrece_estancia: true, precio_estancia_noche: 28,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Hola! Soy Lucía, veterinaria. Cuéntame si tu peludo toma alguna medicación o tiene algún cuidado especial." },
+    ],
+  },
+  marcos: {
+    tiene_perros: true,
+    texto_perros: "Vive con Toro, un labrador chocolate de 5 años — acostumbrado a salir en grupo y muy paciente.",
+    dias_no_disponibles: [4, 11, 18, 25],
+    ofrece_estancia: false,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Buenas! Si tu perro necesita quemar energía, lo nuestro va a funcionar. ¿Qué raza y edad tiene?" },
+    ],
+  },
+  sofia: {
+    tiene_perros: true,
+    texto_perros: "Convive con Lúa y Roco, dos cachorros adoptados — sabe gestionar la mezcla y los tiempos de cada uno.",
+    dias_no_disponibles: [3, 6, 13, 20, 27],
+    ofrece_estancia: true, precio_estancia_noche: 24,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Hola! Encantada. ¿Es vuestro primer paseador o ya ha salido antes con alguien?" },
+    ],
+  },
+  javier: {
+    tiene_perros: false,
+    texto_perros: "No tiene perros propios; tu perro es el protagonista durante todo el paseo.",
+    dias_no_disponibles: [7, 8, 14, 21, 28, 29],
+    ofrece_estancia: true, precio_estancia_noche: 26,
+    chat_inicial: [
+      { de: "ellos", texto: "Hola, soy Javier. ¿Qué tal anda tu peludo con otros perros del barrio?" },
+    ],
+  },
+  elena: {
+    tiene_perros: true,
+    texto_perros: "Vive con Toña, su galga adoptada — entiende muy bien la dinámica entre perros tímidos.",
+    dias_no_disponibles: [2, 10, 17, 24, 31],
+    ofrece_estancia: true, precio_estancia_noche: 25,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Hola! Si tu peludo es asustadizo, ven con calma y vamos paso a paso. ¿Cómo se llama?" },
+    ],
+  },
+  diego: {
+    tiene_perros: false,
+    texto_perros: "No tiene perros propios; toda su atención y energía es para el tuyo.",
+    dias_no_disponibles: [1, 4, 11, 18, 25],
+    ofrece_estancia: false,
+    chat_inicial: [
+      { de: "ellos", texto: "Buenas. Cuéntame qué raza y cuánto pesa, así me hago una idea." },
+    ],
+  },
+  paula: {
+    tiene_perros: false,
+    texto_perros: "Sin perros propios: tu peludo no comparte cariño con nadie más durante el paseo.",
+    dias_no_disponibles: [6, 13, 20, 27],
+    ofrece_estancia: false,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Hola! Llego siempre cinco minutos antes y os mando foto a mitad del paseo. ¿Qué horario te encaja?" },
+    ],
+  },
+  carlos: {
+    tiene_perros: true,
+    texto_perros: "Convive con Coco, un labrador chocolate de 9 años, tranquilo y muy bien socializado.",
+    dias_no_disponibles: [3, 5, 12, 19, 26],
+    ofrece_estancia: true, precio_estancia_noche: 23,
+    chat_inicial: [
+      { de: "ellos", texto: "Hola, soy Carlos. Si buscas calma para tu peludo, esa es justo mi onda 🌿" },
+    ],
+  },
+  irene: {
+    tiene_perros: false,
+    texto_perros: "No tiene perros propios — perfecto si prefieres atención exclusiva, sobre todo con razas potentes.",
+    dias_no_disponibles: [2, 9, 16, 23, 30],
+    ofrece_estancia: false,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Hola! Cuéntame raza y peso, y si tiene alguna manía con la correa o el bozal." },
+    ],
+  },
+  mateo: {
+    tiene_perros: false,
+    texto_perros: "Sin perros propios; ideal si tu peludo necesita un paseo en solitario y sin distracciones.",
+    dias_no_disponibles: [7, 14, 21, 28],
+    ofrece_estancia: false,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Buenas! Tengo bastante disponibilidad entre semana. ¿Qué horario te va mejor?" },
+    ],
+  },
+  natalia: {
+    tiene_perros: true,
+    texto_perros: "Vive con Luna y Bruno, dos mestizos adoptados de protectora — totalmente acostumbrada a la convivencia.",
+    dias_no_disponibles: [4, 11, 18, 25],
+    ofrece_estancia: true, precio_estancia_noche: 27,
+    chat_inicial: [
+      { de: "ellos", texto: "¡Hola! Si tu perro es sociable, lo paso genial con él. ¿Le gusta jugar con otros? 🐶" },
+    ],
+  },
+};
+
+for (const w of WALKERS) {
+  Object.assign(w, EXTRAS[w.id]);
+}
+
+// Respuestas de chat por defecto (cuando el usuario escribe algo nuevo)
+export const CHAT_RESPUESTAS = [
+  "¡Claro! Cuéntame un poco más, así me organizo.",
+  "Genial, lo tengo en agenda. ¿Alguna preferencia de zona del barrio?",
+  "Perfecto. Para el primer día hacemos algo cortito y vamos viendo, ¿te parece?",
+  "Sin problema. Si me das la hora exacta, te confirmo el hueco.",
+  "Apuntado. Cualquier duda última hora me escribes y listo 🐾",
+];
+
+export const RESPUESTAS_RAPIDAS = [
+  "¿Tienes hueco esta semana?",
+  "¿Paseas en grupo o en solitario?",
+  "¿Cómo es el primer día?",
+  "¿Ofreces también estancia?",
 ];
 
 export function getWalker(id: string): Walker | undefined {
