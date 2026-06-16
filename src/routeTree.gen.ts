@@ -14,8 +14,8 @@ import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as MensajesRouteImport } from './routes/mensajes'
 import { Route as BuscandoRouteImport } from './routes/buscando'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TreatsIdRouteImport } from './routes/treats.$id'
 import { Route as ReservasIdRouteImport } from './routes/reservas.$id'
+import { Route as TreatsIdRouteImport } from './routes/treats.$id'
 import { Route as PaseoIdRouteImport } from './routes/paseo.$id'
 import { Route as PaseadorIdRouteImport } from './routes/paseador.$id'
 import { Route as ConfirmarIdRouteImport } from './routes/confirmar.$id'
@@ -47,15 +47,15 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TreatsIdRoute = TreatsIdRouteImport.update({
-  id: '/treats/$id',
-  path: '/treats/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ReservasIdRoute = ReservasIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ReservasRoute,
+} as any)
+const TreatsIdRoute = TreatsIdRouteImport.update({
+  id: '/treats/$id',
+  path: '/treats/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PaseoIdRoute = PaseoIdRouteImport.update({
   id: '/paseo/$id',
@@ -94,8 +94,8 @@ export interface FileRoutesByFullPath {
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
-  '/reservas/$id': typeof ReservasIdRoute
   '/treats/$id': typeof TreatsIdRoute
+  '/reservas/$id': typeof ReservasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -108,8 +108,8 @@ export interface FileRoutesByTo {
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
-  '/reservas/$id': typeof ReservasIdRoute
   '/treats/$id': typeof TreatsIdRoute
+  '/reservas/$id': typeof ReservasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -123,8 +123,8 @@ export interface FileRoutesById {
   '/confirmar/$id': typeof ConfirmarIdRoute
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
-  '/reservas/$id': typeof ReservasIdRoute
   '/treats/$id': typeof TreatsIdRoute
+  '/reservas/$id': typeof ReservasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,8 +139,8 @@ export interface FileRouteTypes {
     | '/confirmar/$id'
     | '/paseador/$id'
     | '/paseo/$id'
-    | '/reservas/$id'
     | '/treats/$id'
+    | '/reservas/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -153,8 +153,8 @@ export interface FileRouteTypes {
     | '/confirmar/$id'
     | '/paseador/$id'
     | '/paseo/$id'
-    | '/reservas/$id'
     | '/treats/$id'
+    | '/reservas/$id'
   id:
     | '__root__'
     | '/'
@@ -167,8 +167,8 @@ export interface FileRouteTypes {
     | '/confirmar/$id'
     | '/paseador/$id'
     | '/paseo/$id'
-    | '/reservas/$id'
     | '/treats/$id'
+    | '/reservas/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -222,19 +222,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/treats/$id': {
-      id: '/treats/$id'
-      path: '/treats/$id'
-      fullPath: '/treats/$id'
-      preLoaderRoute: typeof TreatsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reservas/$id': {
       id: '/reservas/$id'
       path: '/$id'
       fullPath: '/reservas/$id'
       preLoaderRoute: typeof ReservasIdRouteImport
       parentRoute: typeof ReservasRoute
+    }
+    '/treats/$id': {
+      id: '/treats/$id'
+      path: '/treats/$id'
+      fullPath: '/treats/$id'
+      preLoaderRoute: typeof TreatsIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/paseo/$id': {
       id: '/paseo/$id'
