@@ -23,6 +23,7 @@ import { Route as PaseadorIdRouteImport } from './routes/paseador.$id'
 import { Route as ConfirmarIdRouteImport } from './routes/confirmar.$id'
 import { Route as CompletadoIdRouteImport } from './routes/completado.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
+import { Route as CanjearIdRouteImport } from './routes/canjear.$id'
 
 const TiendaRoute = TiendaRouteImport.update({
   id: '/tienda',
@@ -94,6 +95,11 @@ const ChatIdRoute = ChatIdRouteImport.update({
   path: '/chat/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CanjearIdRoute = CanjearIdRouteImport.update({
+  id: '/canjear/$id',
+  path: '/canjear/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/tienda': typeof TiendaRoute
+  '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/tienda': typeof TiendaRoute
+  '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/tienda': typeof TiendaRoute
+  '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
   '/confirmar/$id': typeof ConfirmarIdRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/reservas'
     | '/resultados'
     | '/tienda'
+    | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/reservas'
     | '/resultados'
     | '/tienda'
+    | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/reservas'
     | '/resultados'
     | '/tienda'
+    | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
     | '/confirmar/$id'
@@ -203,6 +215,7 @@ export interface RootRouteChildren {
   ReservasRoute: typeof ReservasRouteWithChildren
   ResultadosRoute: typeof ResultadosRoute
   TiendaRoute: typeof TiendaRoute
+  CanjearIdRoute: typeof CanjearIdRoute
   ChatIdRoute: typeof ChatIdRoute
   CompletadoIdRoute: typeof CompletadoIdRoute
   ConfirmarIdRoute: typeof ConfirmarIdRoute
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/canjear/$id': {
+      id: '/canjear/$id'
+      path: '/canjear/$id'
+      fullPath: '/canjear/$id'
+      preLoaderRoute: typeof CanjearIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -334,6 +354,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReservasRoute: ReservasRouteWithChildren,
   ResultadosRoute: ResultadosRoute,
   TiendaRoute: TiendaRoute,
+  CanjearIdRoute: CanjearIdRoute,
   ChatIdRoute: ChatIdRoute,
   CompletadoIdRoute: CompletadoIdRoute,
   ConfirmarIdRoute: ConfirmarIdRoute,
