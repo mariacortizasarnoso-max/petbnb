@@ -209,23 +209,30 @@ function TreatsCatalogo() {
               </motion.div>
               <h1 className="mt-4 text-xl font-black text-ink">¡Treat enviado a {first}! 🦴</h1>
               <p className="mt-1 text-sm text-ink-soft">
-                Le ha llegado <span className="font-bold text-ink">{seleccion.nombre}</span>. Te lo agradecerá en el próximo paseo.
+                Le ha llegado <span className="font-bold text-ink">{seleccion.nombre}</span>. {first} te escribirá en un momento para agradecértelo.
               </p>
 
               <div className="mt-6 space-y-2">
                 <button
-                  onClick={() => navigate({ to: "/reservas" })}
+                  onClick={() => navigate({ to: "/chat/$id", params: { id: walker.id }, search: { q: "", modo: "planificado" } })}
                   className="w-full rounded-full bg-brand py-3.5 text-sm font-extrabold text-white"
                 >
-                  Ver mis reservas
+                  Ver respuesta en el chat
+                </button>
+                <button
+                  onClick={() => navigate({ to: "/treats" })}
+                  className="w-full rounded-full border border-border bg-white py-3.5 text-sm font-bold text-ink"
+                >
+                  Ver mis treats
                 </button>
                 <button
                   onClick={() => setPaso("catalogo")}
-                  className="w-full rounded-full border border-border bg-white py-3.5 text-sm font-bold text-ink"
+                  className="w-full rounded-full py-2 text-sm font-bold text-ink-soft"
                 >
                   Enviar otro treat
                 </button>
               </div>
+
             </div>
           </motion.div>
         )}
