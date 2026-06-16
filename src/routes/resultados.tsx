@@ -111,9 +111,13 @@ function Resultados() {
                   <ScoreRing score={m.score} />
                 </div>
 
-                <p className="mt-3 rounded-2xl bg-cream-deep/60 p-3 text-[13px] leading-snug text-ink">
-                  <span className="mr-1 font-bold text-brand">IA:</span>{m.explicacion}
-                </p>
+                <div className="mt-3 rounded-2xl bg-cream-deep/60 p-3">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-brand">Por qué encaja con tu perro</p>
+                  <p className="mt-1 text-[13px] leading-snug text-ink">{m.explicacion}</p>
+                  <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-snug text-ink-soft">
+                    <span>🐕</span><span>{m.walker.texto_perros}</span>
+                  </p>
+                </div>
               </Link>
 
               <div className="flex items-center gap-2 border-t border-border px-4 py-3">
