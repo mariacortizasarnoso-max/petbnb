@@ -21,7 +21,26 @@ export type TreatRecibido = {
   descripcion: string;
   deNombre: string;
   fechaLabel: string;
+  cantidad?: number;
 };
+
+export type Canje = {
+  id: string;
+  productoId: string;
+  productoNombre: string;
+  marca: string;
+  emoji: string;
+  imagen?: string;
+  costoTreats: number;
+  fechaISO: string;
+  fechaLabel: string;
+  estado: "en_camino" | "entregado";
+  direccion: string;
+};
+
+export const EUR_POR_TREAT = 0.1; // 1 € = 10 🦴
+export const TREATS_POR_EUR = 10;
+export function eurosATreats(eur: number) { return Math.round(eur * TREATS_POR_EUR); }
 
 const ENVIADOS: TreatEnviado[] = [
   {
