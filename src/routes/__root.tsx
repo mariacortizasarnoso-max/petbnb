@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
+import { BottomNav } from "@/components/BottomNav";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -103,6 +104,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-cream text-ink">
         <Outlet />
+        <BottomNav />
       </div>
       <Toaster position="top-center" richColors closeButton={false} />
     </QueryClientProvider>
