@@ -140,16 +140,21 @@ function Detalle() {
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center gap-2 px-5 py-3">
-          <div className="w-32">
-            <TreatButton />
-          </div>
+          <Link
+            to="/chat/$id"
+            params={{ id: walker.id }}
+            search={{ q, modo }}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-full border-2 border-brand bg-white py-3 font-extrabold text-brand active:scale-[0.98] transition"
+          >
+            <MessageCircle className="h-4 w-4" /> Enviar mensaje
+          </Link>
           <Link
             to="/confirmar/$id"
             params={{ id: walker.id }}
             search={{ q, modo }}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-brand py-3 font-extrabold text-white shadow-[0_8px_18px_-8px_rgba(46,125,91,0.6)] active:scale-[0.98] transition"
           >
-            <MessageCircle className="h-4 w-4" /> Contactar
+            <CalendarDays className="h-4 w-4" /> Reservar
           </Link>
         </div>
       </div>
