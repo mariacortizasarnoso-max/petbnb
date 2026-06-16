@@ -38,6 +38,11 @@ const MisTreatsRoute = MisTreatsRouteImport.update({
   path: '/mis-treats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MisTreatsRoute = MisTreatsRouteImport.update({
+  id: '/mis-treats',
+  path: '/mis-treats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MensajesRoute = MensajesRouteImport.update({
   id: '/mensajes',
   path: '/mensajes',
@@ -54,9 +59,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const TreatsIdRoute = TreatsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => TreatsRoute,
+  id: '/treats/$id',
+  path: '/treats/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ReservasIdRoute = ReservasIdRouteImport.update({
   id: '/$id',
@@ -195,6 +200,7 @@ export interface RootRouteChildren {
   ConfirmarIdRoute: typeof ConfirmarIdRoute
   PaseadorIdRoute: typeof PaseadorIdRoute
   PaseoIdRoute: typeof PaseoIdRoute
+  TreatsIdRoute: typeof TreatsIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,10 +249,10 @@ declare module '@tanstack/react-router' {
     }
     '/treats/$id': {
       id: '/treats/$id'
-      path: '/$id'
+      path: '/treats/$id'
       fullPath: '/treats/$id'
       preLoaderRoute: typeof TreatsIdRouteImport
-      parentRoute: typeof TreatsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/reservas/$id': {
       id: '/reservas/$id'
@@ -317,17 +323,8 @@ const rootRouteChildren: RootRouteChildren = {
   ConfirmarIdRoute: ConfirmarIdRoute,
   PaseadorIdRoute: PaseadorIdRoute,
   PaseoIdRoute: PaseoIdRoute,
+  TreatsIdRoute: TreatsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
