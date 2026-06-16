@@ -80,38 +80,39 @@ function extractTraits(text: string): string[] {
 }
 
 function buildExplanation(walker: Walker, breed: string | null, traits: string[], matched: string[]): string {
+  const first = walker.nombre.split(" ")[0];
   const dog = breed
-    ? `Tu ${breed}${traits.length ? " " + traits.slice(0, 2).join(" y ") : ""}`
+    ? `tu ${breed}${traits.length ? " " + traits.slice(0, 2).join(" y ") : ""}`
     : traits.length
-      ? `Un perro ${traits.slice(0, 2).join(" y ")}`
-      : "Tu perro";
+      ? `un perro ${traits.slice(0, 2).join(" y ")}`
+      : "tu peludo";
 
-  // Razones específicas según tags coincidentes
-  const reasons: string[] = [];
-  if (matched.includes("ansioso") || matched.includes("nervioso") || matched.includes("reactivo") || matched.includes("miedoso")) {
-    reasons.push("pasea en solitario, evita el contacto con otros perros y a un ritmo que les baja las pulsaciones");
+  const razones: string[] = [];
+  if (matched.includes("ansioso") || matched.includes("nervioso") || matched.includes("reactivo") || matched.includes("miedoso") || matched.includes("timido")) {
+    razones.push(`${first} pasea siempre en solitario y por zonas tranquilas, justo lo que ${dog} necesita`);
   }
   if (matched.includes("medicacion")) {
-    reasons.push("está acostumbrada a perros con medicación y no se pone nerviosa");
+    razones.push(`${first} es veterinaria y está acostumbrada a perros con medicación, así que va con la calma que toca`);
   }
   if (matched.includes("mayor")) {
-    reasons.push("respeta el paso de los perros sénior y no fuerza el ritmo");
+    razones.push(`${first} respeta el paso de los perros sénior y nunca fuerza el ritmo`);
   }
   if (matched.includes("cachorro") || matched.includes("educacion")) {
-    reasons.push("trabaja con refuerzo positivo y mucha paciencia con los peques que aprenden");
+    razones.push(`${first} trabaja con refuerzo positivo y mucha paciencia con los peques que aún están aprendiendo`);
   }
   if (matched.includes("grande") || matched.includes("energico")) {
-    reasons.push("tiene experiencia con razas grandes que necesitan quemar energía de verdad");
+    razones.push(`${first} tiene experiencia con razas grandes que necesitan quemar energía de verdad`);
   }
-  if (matched.includes("galgo") || matched.includes("adoptado") || matched.includes("timido")) {
-    reasons.push("entiende a los perros tímidos y adoptados, los saca despacito y sin agobios");
+  if (matched.includes("galgo") || matched.includes("adoptado")) {
+    razones.push(`${first} convive con un galgo adoptado y entiende muy bien a los perros tímidos`);
   }
   if (matched.includes("bulldog") || matched.includes("boxer")) {
-    reasons.push("conoce muy bien a los braquicéfalos y adapta el paseo al calor");
+    razones.push(`${first} conoce muy bien a los braquicéfalos y adapta el paseo cuando aprieta el calor`);
   }
 
-  const reason = reasons[0] ?? `encaja con tu peludo: ${walker.especialidades.slice(0, 2).join(" y ").toLowerCase()}`;
-  return `${dog} encaja con ${walker.nombre.split(" ")[0]}: ${reason}.`;
+  const principal = razones[0] ?? `${first} encaja con ${dog}: ${walker.especialidades.slice(0, 2).join(" y ").toLowerCase()}`;
+  const min = Math.max(3, Math.round(walker.distancia_km * 12));
+  return `${principal}. Además vive a ${min} minutos a pie, en ${walker.barrio}.`;
 }
 
 export function matchWalkers(text: string, mode: "planificado" | "sos" = "planificado"): Match[] {
