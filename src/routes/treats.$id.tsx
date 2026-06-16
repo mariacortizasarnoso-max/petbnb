@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Check, CreditCard, Lock } from "lucide-react";
@@ -14,8 +14,13 @@ import {
   marcarRecibido,
   fotoAleatoria,
   mensajeAgradecimiento,
+  getSaldo,
+  gastarSaldo,
+  subscribeTreats,
+  TREATS_POR_EUR,
 } from "@/data/treatsHistory";
 import { pushMessage, ahora } from "@/data/chatStore";
+import { PaymentMethodSelector, type Metodo } from "@/components/PaymentMethodSelector";
 
 const search = z.object({
   reserva: z.string().optional(),
@@ -42,27 +47,43 @@ function TreatsCatalogo() {
 
   const [paso, setPaso] = useState<Paso>("catalogo");
   const [seleccion, setSeleccion] = useState<Treat | null>(null);
+  const [metodo, setMetodo] = useState<Metodo>("treats");
+
+  const [, force] = useState(0);
+  useEffect(() => subscribeTreats(() => force((n) => n + 1)), []);
+  const saldo = getSaldo();
 
   // tarjeta mock
   const [num, setNum] = useState("4242 4242 4242 4242");
   const [exp, setExp] = useState("12/27");
   const [cvc, setCvc] = useState("123");
 
-  const elegir = (t: Treat) => { setSeleccion(t); setPaso("pago"); };
+  const costoTreats = seleccion ? seleccion.precio * TREATS_POR_EUR : 0;
+  const elegir = (t: Treat) => {
+    setSeleccion(t);
+    const cTreats = t.precio * TREATS_POR_EUR;
+    setMetodo(saldo >= cTreats ? "treats" : "tarjeta");
+    setPaso("pago");
+  };
 
   const pagar = () => {
+    if (!seleccion) return;
+    if (metodo === "treats") {
+      const ok = gastarSaldo(costoTreats);
+      if (!ok) {
+        toast.error("Saldo insuficiente. Te faltan " + (costoTreats - saldo) + " 🦴");
+        return;
+      }
+    }
     setPaso("procesando");
     setTimeout(() => {
       setPaso("exito");
-      if (!seleccion) return;
-
       // persistir en reserva si viene una
       if (reservaId) {
         const idx = RESERVAS.findIndex((r) => r.id === reservaId);
         if (idx >= 0) RESERVAS[idx] = { ...RESERVAS[idx], treatEnviado: true, treatNombre: seleccion.nombre };
       }
 
-      // registrar en historial
       const enviado = addTreatEnviado({
         treatId: seleccion.id,
         treatNombre: seleccion.nombre,
@@ -73,7 +94,6 @@ function TreatsCatalogo() {
         perro,
       });
 
-      // confirmación del cuidador en el chat + toast tras 1.6s
       setTimeout(() => {
         const foto = fotoAleatoria();
         const texto = mensajeAgradecimiento(first, seleccion.nombre, perro);
@@ -86,6 +106,7 @@ function TreatsCatalogo() {
       }, 1600);
     }, 1500);
   };
+
 
 
   return (
