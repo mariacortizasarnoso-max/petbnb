@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { z } from "zod";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, BadgeCheck, CalendarDays } from "lucide-react";
+import { Send, BadgeCheck, CalendarDays, Gift } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import {
@@ -10,6 +10,14 @@ import {
   type Walker,
   RESPUESTAS_RAPIDAS,
 } from "@/data/walkers";
+import {
+  CHAT_STORE,
+  ahora,
+  getChat,
+  setChat,
+  subscribeChat,
+  type ChatMsg,
+} from "@/data/chatStore";
 
 const search = z.object({
   q: z.string().default(""),
@@ -26,21 +34,14 @@ export const Route = createFileRoute("/chat/$id")({
   component: Chat,
 });
 
-type Msg = { de: "yo" | "ellos"; texto: string; hora: string };
-
-const CHAT_STORE = new Map<string, Msg[]>();
-
-const ahora = () =>
-  new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-
-function respuestaContextual(texto: string, first: string): string {
+function respuestaContextual(texto: string, _first: string): string {
   const t = texto
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
   if (/(reactiv|ansios|miedos|nervios|tira|asustad)/.test(t))
     return `Sin problema. Con perros así prefiero salir en solitario y por calles tranquilas, sin cruzarnos con otros peludos. En dos o tres paseos coge confianza 🐾`;
-  if (/(precio|treat|cuesta|cuanto vale|cobr|pago|dinero|euros|€)/.test(t))
+  if (/(precio|cuesta|cuanto vale|cobr|pago|dinero|euros|€)/.test(t))
     return `Aquí no se paga con dinero — se agradece con un treat al final. Tú decides cuál y cuándo, sin presión.`;
   if (/(disponib|hueco|hora|cuando|hoy|manana|esta semana|finde)/.test(t))
     return `Esta semana tengo libres las tardes a partir de las 18:00 y los sábados por la mañana. ¿Qué hueco te encaja?`;
@@ -66,15 +67,19 @@ function Chat() {
   const { q, modo } = Route.useSearch();
   const first = walker.nombre.split(" ")[0];
 
-  const [mensajes, setMensajes] = useState<Msg[]>(() => {
+  const [mensajes, setMensajes] = useState<ChatMsg[]>(() => {
     const cached = CHAT_STORE.get(walker.id);
-    if (cached) return cached;
+    if (cached && cached.length) return cached;
     const base = walker.chat_inicial ?? [
       { de: "ellos" as const, texto: `¡Hola! Soy ${first}. Cuéntame qué necesitas para tu peludo.` },
     ];
-    const initial = base.map((m, i) => {
+    const initial: ChatMsg[] = base.map((m, i) => {
       const d = new Date(Date.now() - (base.length - i) * 60_000);
-      return { de: m.de, texto: m.texto, hora: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) };
+      return {
+        de: m.de,
+        texto: m.texto,
+        hora: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+      };
     });
     CHAT_STORE.set(walker.id, initial);
     return initial;
@@ -84,10 +89,19 @@ function Chat() {
   const scroller = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync from external updates (e.g. treat thank-you message)
   useEffect(() => {
-    CHAT_STORE.set(walker.id, mensajes);
+    const unsub = subscribeChat((id) => {
+      if (id === walker.id) setMensajes(getChat(walker.id));
+    });
+    return unsub;
+  }, [walker.id]);
+
+  useEffect(() => {
+    setChat(walker.id, mensajes);
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
-  }, [mensajes, walker.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mensajes.length]);
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
@@ -152,13 +166,20 @@ function Chat() {
             >
               <div className={`max-w-[78%] ${m.de === "yo" ? "items-end" : "items-start"} flex flex-col`}>
                 <div
-                  className={`rounded-2xl px-3.5 py-2 text-[14px] leading-snug ${
+                  className={`overflow-hidden rounded-2xl text-[14px] leading-snug ${
                     m.de === "yo"
                       ? "rounded-br-md bg-brand text-white"
                       : "rounded-bl-md bg-white text-ink shadow-sm"
                   }`}
                 >
-                  {m.texto}
+                  {m.foto && (
+                    <SafeImage
+                      src={m.foto}
+                      alt="Foto de tu peludo"
+                      className="h-44 w-60 rounded-none"
+                    />
+                  )}
+                  <div className="px-3.5 py-2">{m.texto}</div>
                 </div>
                 <span className="mt-1 px-1 text-[10px] text-ink-soft">{m.hora}</span>
               </div>
@@ -195,6 +216,15 @@ function Chat() {
           ))}
         </div>
         <div className="flex items-center gap-2 px-4 py-2.5">
+          <Link
+            to="/treats/$id"
+            params={{ id: walker.id }}
+            search={{ perro: "tu peludo" }}
+            aria-label="Enviar treat"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-coral-soft text-coral active:scale-95"
+          >
+            <Gift className="h-5 w-5" />
+          </Link>
           <input
             ref={inputRef}
             value={draft}

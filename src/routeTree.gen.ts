@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultadosRouteImport } from './routes/resultados'
 import { Route as ReservasRouteImport } from './routes/reservas'
+import { Route as MisTreatsRouteImport } from './routes/mis-treats'
 import { Route as MensajesRouteImport } from './routes/mensajes'
 import { Route as BuscandoRouteImport } from './routes/buscando'
 import { Route as IndexRouteImport } from './routes/index'
@@ -30,6 +31,11 @@ const ResultadosRoute = ResultadosRouteImport.update({
 const ReservasRoute = ReservasRouteImport.update({
   id: '/reservas',
   path: '/reservas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MisTreatsRoute = MisTreatsRouteImport.update({
+  id: '/mis-treats',
+  path: '/mis-treats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MensajesRoute = MensajesRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
+  '/mis-treats': typeof MisTreatsRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
+  '/mis-treats': typeof MisTreatsRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
+  '/mis-treats': typeof MisTreatsRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/chat/$id': typeof ChatIdRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/'
     | '/buscando'
     | '/mensajes'
+    | '/mis-treats'
     | '/reservas'
     | '/resultados'
     | '/chat/$id'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/'
     | '/buscando'
     | '/mensajes'
+    | '/mis-treats'
     | '/reservas'
     | '/resultados'
     | '/chat/$id'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/buscando'
     | '/mensajes'
+    | '/mis-treats'
     | '/reservas'
     | '/resultados'
     | '/chat/$id'
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BuscandoRoute: typeof BuscandoRoute
   MensajesRoute: typeof MensajesRoute
+  MisTreatsRoute: typeof MisTreatsRoute
   ReservasRoute: typeof ReservasRouteWithChildren
   ResultadosRoute: typeof ResultadosRoute
   ChatIdRoute: typeof ChatIdRoute
@@ -199,6 +212,13 @@ declare module '@tanstack/react-router' {
       path: '/reservas'
       fullPath: '/reservas'
       preLoaderRoute: typeof ReservasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mis-treats': {
+      id: '/mis-treats'
+      path: '/mis-treats'
+      fullPath: '/mis-treats'
+      preLoaderRoute: typeof MisTreatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mensajes': {
@@ -290,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuscandoRoute: BuscandoRoute,
   MensajesRoute: MensajesRoute,
+  MisTreatsRoute: MisTreatsRoute,
   ReservasRoute: ReservasRouteWithChildren,
   ResultadosRoute: ResultadosRoute,
   ChatIdRoute: ChatIdRoute,

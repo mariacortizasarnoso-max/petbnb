@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { z } from "zod";
-import { Star, BadgeCheck, MapPin, MessageCircle, CalendarDays } from "lucide-react";
+import { Star, BadgeCheck, MapPin, MessageCircle, CalendarDays, Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
@@ -134,6 +134,22 @@ function Detalle() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="mt-6 px-5">
+          <Link
+            to="/treats/$id"
+            params={{ id: walker.id }}
+            search={{ perro: "tu peludo" }}
+            className="flex items-center gap-3 rounded-2xl border border-coral/25 bg-coral-soft/50 p-4 active:scale-[0.99] transition"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">🦴</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-extrabold text-ink">Enviar un treat a {walker.nombre.split(" ")[0]}</div>
+              <div className="text-[12px] leading-snug text-ink-soft">Un detalle de agradecimiento, en cualquier momento.</div>
+            </div>
+            <Gift className="h-5 w-5 shrink-0 text-coral" />
+          </Link>
         </div>
       </main>
 

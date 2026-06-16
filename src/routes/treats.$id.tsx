@@ -1,13 +1,21 @@
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { Check, CreditCard, Lock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { getWalker, type Walker } from "@/data/walkers";
-import { TREATS, getTreat, type Treat } from "@/data/treats";
+import { TREATS, type Treat } from "@/data/treats";
 import { RESERVAS } from "@/data/reservas";
+import {
+  addTreatEnviado,
+  marcarRecibido,
+  fotoAleatoria,
+  mensajeAgradecimiento,
+} from "@/data/treatsHistory";
+import { pushMessage, ahora } from "@/data/chatStore";
 
 const search = z.object({
   reserva: z.string().optional(),
@@ -46,13 +54,39 @@ function TreatsCatalogo() {
     setPaso("procesando");
     setTimeout(() => {
       setPaso("exito");
+      if (!seleccion) return;
+
       // persistir en reserva si viene una
-      if (reservaId && seleccion) {
+      if (reservaId) {
         const idx = RESERVAS.findIndex((r) => r.id === reservaId);
         if (idx >= 0) RESERVAS[idx] = { ...RESERVAS[idx], treatEnviado: true, treatNombre: seleccion.nombre };
       }
+
+      // registrar en historial
+      const enviado = addTreatEnviado({
+        treatId: seleccion.id,
+        treatNombre: seleccion.nombre,
+        emoji: seleccion.emoji,
+        precio: seleccion.precio,
+        walkerId: walker.id,
+        walkerNombre: walker.nombre,
+        perro,
+      });
+
+      // confirmación del cuidador en el chat + toast tras 1.6s
+      setTimeout(() => {
+        const foto = fotoAleatoria();
+        const texto = mensajeAgradecimiento(first, seleccion.nombre, perro);
+        pushMessage(walker.id, { de: "ellos", texto, hora: ahora(), foto });
+        marcarRecibido(enviado.id, foto, texto);
+        toast.success(`${first} ha recibido tu treat 🦴`, {
+          description: texto,
+          duration: 5500,
+        });
+      }, 1600);
     }, 1500);
   };
+
 
   return (
     <div className="min-h-screen pb-20 bg-cream">
@@ -175,23 +209,30 @@ function TreatsCatalogo() {
               </motion.div>
               <h1 className="mt-4 text-xl font-black text-ink">¡Treat enviado a {first}! 🦴</h1>
               <p className="mt-1 text-sm text-ink-soft">
-                Le ha llegado <span className="font-bold text-ink">{seleccion.nombre}</span>. Te lo agradecerá en el próximo paseo.
+                Le ha llegado <span className="font-bold text-ink">{seleccion.nombre}</span>. {first} te escribirá en un momento para agradecértelo.
               </p>
 
               <div className="mt-6 space-y-2">
                 <button
-                  onClick={() => navigate({ to: "/reservas" })}
+                  onClick={() => navigate({ to: "/chat/$id", params: { id: walker.id }, search: { q: "", modo: "planificado" } })}
                   className="w-full rounded-full bg-brand py-3.5 text-sm font-extrabold text-white"
                 >
-                  Ver mis reservas
+                  Ver respuesta en el chat
+                </button>
+                <button
+                  onClick={() => navigate({ to: "/mis-treats" })}
+                  className="w-full rounded-full border border-border bg-white py-3.5 text-sm font-bold text-ink"
+                >
+                  Ver mis treats
                 </button>
                 <button
                   onClick={() => setPaso("catalogo")}
-                  className="w-full rounded-full border border-border bg-white py-3.5 text-sm font-bold text-ink"
+                  className="w-full rounded-full py-2 text-sm font-bold text-ink-soft"
                 >
                   Enviar otro treat
                 </button>
               </div>
+
             </div>
           </motion.div>
         )}
