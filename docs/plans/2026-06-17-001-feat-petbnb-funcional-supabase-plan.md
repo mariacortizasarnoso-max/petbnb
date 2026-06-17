@@ -42,6 +42,12 @@ La restricción de diseño dominante: **no romper la UI ya construida**. Las sha
 - **D-B. Persistido pero simulado.** Chat y seguimiento se guardan en BD, pero las respuestas del cuidador y la animación del paseo siguen guionizadas. Supabase Realtime y GPS real → diferidos.
 - **D-C. Treats reales, pago simulado.** El saldo/ledger de treats es real; el formulario de tarjeta es mock; Stripe → diferido.
 
+> **Revisión CEO (2026-06-17) — alcance MEDIO elegido.** Tras la revisión, se reduce el alcance del plan completo a un MVP demostrable: **persistencia real + matching real con Claude**, saltando la complejidad multiusuario.
+> - **Auth ligera:** sesión silenciosa/anónima por defecto (magic link opcional al reservar). El login **nunca** bloquea el flujo "describe a tu perro" (regla de demo). RLS básica de "filas propias", sin modelo de dos roles.
+> - **Orden de construcción (palanca, no dependencias):** primero **U5 (matching real con Claude)** detrás del fallback existente — es el único valor visible en una demo; luego U1-U2 (Supabase+esquema), U4 (paseadores desde DB), U6/U7 (reservas/chat persistidos), U8 (treats, versión ligera pero server-authoritative).
+> - **Tratos como riesgo de negocio:** mantener el pago **simulado**; los treats canjeables por productos reales de partners (Kiwoko/Dr Bimix/Maikai) son casi "dinero/vales" y abren preguntas legales — fuera de esta v1.
+> - **Cero pantallas en blanco:** todos los modos de fallo del matching (timeout 12s, error de API, JSON inválido, `walkerId` alucinado, pool SOS vacío) caen al fallback determinista, probado antes que nada. Toda pantalla que lea de BD necesita estado de carga y vacío.
+
 ### Deferred to Follow-Up Work
 - Supabase Realtime para chat y seguimiento; GPS real.
 - App/rol de cuidador (registro, disponibilidad, aceptar/rechazar, cerrar paseo manualmente).
@@ -389,3 +395,26 @@ src/routes/
 - Investigación del repo `paseo-confiado-bnb`: TanStack Start v1.167 + React 19 + Tailwind v4 + shadcn/ui + Leaflet + Framer Motion; 16 rutas; datos mock en `src/data/*` (observables `chatStore.ts`/`treatsHistory.ts`); matching en `src/lib/matching.ts`; patrón server fn en `src/lib/api/example.functions.ts` (recomienda server fns sobre Edge Functions); sin Supabase/auth/tests.
 - `PRD PETBNB.md` y `Prompts Lovable petbnb.md` (repo `petbnb`): concepto, modos planificado/SOS, prompt de matching, treats/partners.
 - Aprendizajes institucionales: no existe base previa (`docs/solutions/` ausente). Candidatos a capturar con `/ce-compound` tras implementar: contrato de structured output + timeout/fallback, API key server-only, diseño del ledger de treats, políticas RLS, persistencia de chat.
+
+---
+
+## GSTACK REVIEW REPORT
+
+**Skill:** plan-ceo-review · **Fecha:** 2026-06-17 · **Repo:** mariacortizasarnoso-max/paseo-confiado-bnb · **Rama:** development
+**Modo:** Reducción de alcance → Hold del alcance medio · **Enfoque elegido (0C-bis):** Medio (persistir + matching real)
+
+| Run | Estado | Hallazgos clave |
+| --- | --- | --- |
+| Reto a la premisa (0A) | Absorbido | El PRD era una demo de hackathon ("solo la llamada a Claude es real"); "todo funcional" invierte eso. Se confirma objetivo = MVP demostrable, no producto completo. |
+| Alternativas de implementación (0C-bis) | Resuelto | A (solo matching) / B (v1 Supabase completa) / C (medio). Elegido **C**. |
+| Modos de fallo (matching) | Abierto → mitigado en plan | timeout 12s, error API, JSON inválido, `walkerId` alucinado, pool SOS vacío → todos al fallback determinista, probado primero. |
+| Seguridad de secretos | Abierto → mitigado en plan | `ANTHROPIC_API_KEY` solo en `.server.ts`, nunca `VITE_`; verificación por `grep` del build (U1/U5). |
+| Integridad del saldo de treats | Abierto → mitigado en plan | Mutación server-side, guard de no-negativo, idempotencia (U8), incluso en versión ligera. |
+| UX funcional vs mock | Abierto → mitigado en plan | Estados de carga/vacío en toda pantalla que lea de BD; login nunca bloquea el flujo de búsqueda. |
+| Riesgo de negocio (treats/partners) | Diferido | Treats canjeables = casi vales/dinero; pago real y fulfillment de partners fuera de v1. |
+
+**VERDICT:** Plan aprobado con alcance reducido a "medio". Prioridad de construcción reordenada por palanca (matching real primero). Sin cambios de código realizados (solo revisión).
+
+**Recortado explícitamente de la v1 (escrito para que no se olvide):** app/rol de cuidador, auth multiusuario y RLS endurecida, pagos reales (Stripe), realtime/GPS, notificaciones push, fulfillment real con partners.
+
+NO UNRESOLVED DECISIONS
