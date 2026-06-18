@@ -28,7 +28,7 @@ La restricción de diseño dominante: **no romper la UI ya construida**. Las sha
 
 ### En alcance (v1 funcional)
 - Supabase: proyecto, Postgres con RLS, Auth, Storage (fotos de chat / check-in).
-- Auth del **dueño** + su perfil y perro(s).
+- Auth **ligera** del dueño: sesión anónima por defecto + magic link opcional al reservar (el login nunca bloquea el flujo de búsqueda). Perfil + perro(s).
 - Catálogo de paseadores y reseñas servidos desde Postgres (lectura pública).
 - Matching real con Claude vía server function (structured output, timeout 12s, fallback determinista).
 - Persistencia de reservas (paseo y estancia) con sus estados.
@@ -200,7 +200,7 @@ src/lib/server/
 src/hooks/
   useWalkers.ts useWalker.ts useBookings.ts useChat.ts useTreats.ts useAuth.ts
 src/routes/
-  login.tsx perfil.tsx       # nuevas pantallas de auth/perfil
+  perfil.tsx                 # nueva pantalla de perfil (sin login: sesión anónima + magic link opcional)
 ```
 
 ---
@@ -244,24 +244,25 @@ src/routes/
 - Seed: 12 walkers, ≥3 con `disponible_ahora=true && distancia_km<2`. *(R4)*
 **Verification:** Migraciones aplican limpio; `get_advisors` (Supabase) sin warnings de RLS críticos; consultas de seed devuelven los conteos esperados.
 
-### U3. Auth del dueño + perfil y perros
+### U3. Identidad ligera del dueño + perfil y perros
 
-**Goal:** Identidad real y sesión persistente; asociar datos del usuario.
+**Goal:** Dar identidad y sesión persistente **sin que el login bloquee** el flujo de búsqueda (regla de demo).
 **Requirements:** R1, R2, R11
 **Dependencies:** U1, U2
 **Files:**
-- `src/hooks/useAuth.ts` (sesión, signIn/signUp/signOut)
-- `src/routes/login.tsx`, `src/routes/perfil.tsx`
-- `src/routes/__root.tsx` (proveedor de sesión + guardas)
-- `src/components/Header.tsx`, `src/components/BottomNav.tsx` (estado de sesión / acceso a perfil)
-**Approach:** Supabase Auth email+contraseña (magic link opcional). Tras login, cargar `profiles` + `dogs`. Rutas con datos de usuario (`reservas`, `mis-treats`, `chat`, `confirmar`) requieren sesión; si no hay, redirigir a `login`. Onboarding mínimo: nombre + un perro (nombre, notas).
+- `src/hooks/useAuth.ts` (sesión anónima por defecto; vincular email vía magic link; signOut)
+- `src/routes/perfil.tsx` (perfil + perro)
+- `src/routes/__root.tsx` (proveedor de sesión; crea sesión anónima al cargar, sin guardas que redirijan a login)
+- `src/components/Header.tsx`, `src/components/BottomNav.tsx` (acceso a perfil)
+**Approach:** Sesión **anónima** de Supabase al cargar la app (sin pantalla de login). El flujo "describe a tu perro → resultados" funciona sin autenticarse. Al **reservar o enviar treats** se *ofrece* (no se obliga) vincular un email por magic link para conservar la cuenta. Las filas (reservas, chat, treats) se asocian al `user_id` de la sesión —anónima o vinculada— y al vincular el email se conservan. RLS de "filas propias". Onboarding mínimo: nombre + un perro.
 **Patterns to follow:** validación con Zod (search params actuales); React Hook Form (ya instalado).
 **Test scenarios:**
-- Signup crea fila en `profiles` (trigger). *(R2)*
-- Sesión persiste tras recargar (token en storage). *(R1)*
-- Acceso a `reservas` sin sesión → redirige a `login`. *(R11)*
-- Login con credenciales inválidas → error visible, sin crash.
-**Verification:** Flujo signup→login→logout funciona; el perro creado aparece preseleccionado en `confirmar.$id`.
+- Abrir la app en frío crea una sesión anónima y el flujo de búsqueda funciona sin login. *(R1)*
+- La sesión anónima persiste tras recargar. *(R1)*
+- Reservar ofrece vincular email (magic link); se puede continuar sin vincular. *(R2)*
+- Tras vincular email, las reservas/treats previas siguen bajo el mismo usuario. *(R2)*
+- El usuario solo ve sus propias filas. *(R11)*
+**Verification:** Abrir la URL en frío lleva directo a "describe a tu perro" (sin login); reservar y recargar conserva la reserva bajo la misma sesión.
 
 ### Fase B — Flujos núcleo funcionales
 
