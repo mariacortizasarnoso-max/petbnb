@@ -1,6 +1,6 @@
 # feat: Convertir el prototipo petbnb en app funcional (Supabase + server functions)
 
-**Target repo:** `paseo-confiado-bnb` (rama `development`)
+**Target repo:** `petbnb` (rama `development`) · **Construcción:** Claude Code · **Despliegue:** Vercel · **Prototipo (referencia):** generado en Lovable, ya no se usa para construir
 **Fecha:** 2026-06-17
 **Tipo:** feat
 **Profundidad:** Deep
