@@ -19,8 +19,11 @@ import process from "node:process";
 export function getServerConfig() {
   return {
     nodeEnv: process.env.NODE_ENV,
-    // Add server-only values here, e.g.:
-    //   databaseUrl: process.env.DATABASE_URL,
-    //   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    // Server-only secrets. NEVER prefix these with VITE_ (that would ship
+    // them to the browser). Set them locally in .env and in Vercel's
+    // Environment Variables. See .env.example for the full list.
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    // Used from EPIC 1 onward (matching server function):
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   };
 }
