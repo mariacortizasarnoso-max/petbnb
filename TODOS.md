@@ -36,18 +36,21 @@ Estado EPIC: [x] Cerrada y en `feat/epic1-matching-claude`
 
 ---
 
-## EPIC 2 — Identidad y paseadores · Responsable: ______
+## EPIC 2 — Identidad y paseadores · Responsable: María
 
 Login ligero (sin muro), perfil del dueño + perro, paseadores desde la BD.
 
 - [ ] **U3** — Auth ligera (sesión silenciosa/anónima; magic link opcional al reservar; el login NUNCA bloquea el flujo de búsqueda) + perfil + perro
-- [ ] **U4** — Paseadores y reseñas desde Postgres (hooks React Query); estados de carga y vacío
+- [x] **U4** — Paseadores y reseñas desde Postgres (hooks React Query); estados de carga y vacío
+
+> U4 (en PR): `useWalkers`/`useWalker` leen `walkers`+`reviews` con anon key (RLS pública). Cableados `index.tsx` (home) y `paseador.$id.tsx` (detalle, con skeleton + "no encontrado"). `resultados.tsx` no cambia: recibe los walkers vía el server fn de matching.
+> ⚠️ Handoff a Jorge (U5): el pool de `matching.server.ts` sigue usando el array `WALKERS` mock. Cuando se quiera, cambiarlo a leer de `walkers` (DB) para alinear con U4. Por ahora son datos idénticos (la BD se sembró del mock), así que no hay divergencia.
 
 Estado EPIC: [ ] Cerrada y en `development`
 
 ---
 
-## EPIC 3 — Reservas y chat · Responsable: ______
+## EPIC 3 — Reservas y chat · Responsable: María
 
 Reservas (paseo y estancia) que persisten; chat persistente; cierre por el cuidador.
 

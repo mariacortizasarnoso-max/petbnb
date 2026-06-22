@@ -1,10 +1,10 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { Star, BadgeCheck, MapPin, MessageCircle, CalendarDays, Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { getWalker, type Walker } from "@/data/walkers";
+import { useWalker } from "@/hooks/useWalker";
 
 const search = z.object({
   q: z.string().default(""),
@@ -13,21 +13,16 @@ const search = z.object({
 
 export const Route = createFileRoute("/paseador/$id")({
   validateSearch: (s) => search.parse(s),
-  loader: ({ params }) => {
-    const w = getWalker(params.id);
-    if (!w) throw notFound();
-    return { walker: w };
-  },
   component: Detalle,
-  notFoundComponent: () => (
-    <div className="p-10 text-center">No encontramos a este paseador.</div>
-  ),
 });
 
 function Detalle() {
-  const data = Route.useLoaderData() as { walker: Walker };
-  const walker = data.walker;
+  const { id } = Route.useParams();
   const { q, modo } = Route.useSearch();
+  const { data: walker, isPending } = useWalker(id);
+
+  if (isPending) return <DetalleSkeleton />;
+  if (!walker) return <NoEncontrado />;
 
   return (
     <div className="pb-32 bg-cream">
@@ -182,6 +177,55 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="card-soft p-3 text-center">
       <div className="text-base font-extrabold text-ink">{value}</div>
       <div className="text-[11px] text-ink-soft">{label}</div>
+    </div>
+  );
+}
+
+function DetalleSkeleton() {
+  return (
+    <div className="min-h-screen bg-cream pb-32">
+      <Header back />
+      <div className="h-48 shimmer rounded-none" />
+      <main className="mx-auto max-w-md px-5">
+        <div className="-mt-12 flex items-end gap-3">
+          <div className="shimmer h-24 w-24 rounded-full ring-4 ring-cream" />
+          <div className="space-y-2 pb-2">
+            <div className="shimmer h-4 w-32 rounded" />
+            <div className="shimmer h-3 w-24 rounded" />
+          </div>
+        </div>
+        <div className="mt-6 space-y-2">
+          <div className="shimmer h-3 w-full rounded" />
+          <div className="shimmer h-3 w-4/5 rounded" />
+          <div className="shimmer h-3 w-3/5 rounded" />
+        </div>
+        <div className="mt-6 grid grid-cols-3 gap-2">
+          {[0, 1, 2].map((k) => (
+            <div key={k} className="shimmer h-16 rounded-2xl" />
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function NoEncontrado() {
+  return (
+    <div className="min-h-screen bg-cream">
+      <Header back />
+      <div className="mx-auto max-w-md px-5 pt-20 text-center">
+        <div className="text-5xl">🐾</div>
+        <h1 className="mt-4 text-xl font-black text-ink">No encontramos a este paseador</h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          Puede que ya no esté disponible. Prueba a buscar de nuevo.
+        </p>
+        <Link
+          to="/"
+          className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white"
+        >
+          Volver al inicio
+        </Link>
+      </div>
     </div>
   );
 }

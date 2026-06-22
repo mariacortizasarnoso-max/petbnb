@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { WALKERS } from "@/data/walkers";
+import { useWalkers } from "@/hooks/useWalkers";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,7 +28,8 @@ function Home() {
     navigate({ to: "/buscando", search: { q, modo: mode } });
   };
 
-  const vecinos = WALKERS.slice(0, 8);
+  const { data: walkers = [], isPending } = useWalkers();
+  const vecinos = walkers.slice(0, 8);
 
   return (
     <div className="pb-24">
@@ -102,6 +103,14 @@ function Home() {
           </div>
           <div className="mt-3 -mx-5 overflow-x-auto px-5 pb-2">
             <div className="flex gap-3">
+              {isPending &&
+                [0, 1, 2, 3, 4].map((k) => (
+                  <div key={k} className="flex w-[110px] shrink-0 flex-col items-center gap-2">
+                    <div className="shimmer h-[72px] w-[72px] rounded-full" />
+                    <div className="shimmer h-3 w-12 rounded" />
+                    <div className="shimmer h-2.5 w-16 rounded" />
+                  </div>
+                ))}
               {vecinos.map((w, i) => (
                 <motion.div
                   key={w.id}
