@@ -12,4 +12,7 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Apuntar el build de Nitro a Vercel (por defecto el wrapper de Lovable usa Cloudflare).
+  // Genera la salida en .vercel/output, que Vercel detecta automáticamente.
+  nitro: { preset: "vercel" },
 });
