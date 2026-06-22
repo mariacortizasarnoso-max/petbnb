@@ -1,23 +1,16 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, BadgeCheck, CalendarDays, Gift } from "lucide-react";
+import { toast } from "sonner";
+
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import {
-  getWalker,
-  type Walker,
-  RESPUESTAS_RAPIDAS,
-} from "@/data/walkers";
-import {
-  CHAT_STORE,
-  ahora,
-  getChat,
-  setChat,
-  subscribeChat,
-  type ChatMsg,
-} from "@/data/chatStore";
+import { type Walker, RESPUESTAS_RAPIDAS } from "@/data/walkers";
+import { useWalker } from "@/hooks/useWalker";
+import { useAuth } from "@/hooks/useAuth";
+import { useChat, useSendMessage, type ChatMsg } from "@/hooks/useChat";
 
 const search = z.object({
   q: z.string().default(""),
@@ -26,103 +19,105 @@ const search = z.object({
 
 export const Route = createFileRoute("/chat/$id")({
   validateSearch: (s) => search.parse(s),
-  loader: ({ params }) => {
-    const w = getWalker(params.id);
-    if (!w) throw notFound();
-    return { walker: w };
-  },
   component: Chat,
 });
 
-function respuestaContextual(texto: string, _first: string): string {
-  const t = texto
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-  if (/(reactiv|ansios|miedos|nervios|tira|asustad)/.test(t))
-    return `Sin problema. Con perros así prefiero salir en solitario y por calles tranquilas, sin cruzarnos con otros peludos. En dos o tres paseos coge confianza 🐾`;
-  if (/(precio|cuesta|cuanto vale|cobr|pago|dinero|euros|€)/.test(t))
-    return `Aquí no se paga con dinero — se agradece con un treat al final. Tú decides cuál y cuándo, sin presión.`;
-  if (/(disponib|hueco|hora|cuando|hoy|manana|esta semana|finde)/.test(t))
-    return `Esta semana tengo libres las tardes a partir de las 18:00 y los sábados por la mañana. ¿Qué hueco te encaja?`;
-  if (/(estancia|dormir|noche|fin de semana|vacacion|viaje|finde fuera)/.test(t))
-    return `Sí, ofrezco estancia en casa. Tengo espacio tranquilo y mando foto cada día. Dime las fechas y te confirmo el hueco 🏡`;
-  if (/(medica|pastilla|enferm|cuidad|insulina|gota)/.test(t))
-    return `Estoy acostumbrada a darles su medicación a su hora. Mándame las indicaciones por escrito y lo llevo controlado.`;
-  if (/(foto|video|ver|enseñ|mandar)/.test(t))
-    return `Por supuesto, te mando foto a mitad del paseo siempre. Verás lo bien que lo pasa 📸`;
-  if (/(primer dia|conocer|probar|prueba)/.test(t))
-    return `Lo suyo para el primer día es algo cortito, 20-30 min, para que me coja confianza y vea su ritmo. ¿Te parece?`;
-  if (/(grupo|otros perros|solitari)/.test(t))
-    return `Suelo pasear en solitario salvo que el perro sea muy sociable y lo pidáis. Así me concentro en él.`;
-  if (/(gracias|genial|perfecto|vale|ok|estupendo|guay)/.test(t))
-    return `¡A ti! Cualquier cosa me escribes por aquí 🐾`;
-  if (/(hola|buenas|saludos)/.test(t))
-    return `¡Hola! Cuéntame un poco sobre tu peludo: edad, raza y cómo es con otros perros y con la calle.`;
-  return `¡Anotado! Cuéntame algún detalle más y te confirmo, así me organizo bien.`;
+function ahora(): string {
+  return new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
 }
 
 function Chat() {
-  const { walker } = Route.useLoaderData() as { walker: Walker };
+  const { id } = Route.useParams();
+  const { data: walker, isPending } = useWalker(id);
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Chat" />
+        <main className="mx-auto max-w-md px-4 pt-4">
+          <div className="shimmer h-16 w-full rounded-2xl" />
+          <div className="mt-4 space-y-3">
+            <div className="shimmer h-12 w-2/3 rounded-2xl" />
+            <div className="shimmer ml-auto h-12 w-1/2 rounded-2xl" />
+          </div>
+        </main>
+      </div>
+    );
+  }
+  if (!walker) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Chat" />
+        <div className="mx-auto max-w-md px-5 pt-20 text-center">
+          <div className="text-5xl">🐾</div>
+          <Link
+            to="/mensajes"
+            className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white"
+          >
+            Ir a mensajes
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <ChatView walker={walker} />;
+}
+
+function ChatView({ walker }: { walker: Walker }) {
   const { q, modo } = Route.useSearch();
+  const { user } = useAuth();
   const first = walker.nombre.split(" ")[0];
 
-  const [mensajes, setMensajes] = useState<ChatMsg[]>(() => {
-    const cached = CHAT_STORE.get(walker.id);
-    if (cached && cached.length) return cached;
-    const base = walker.chat_inicial ?? [
-      { de: "ellos" as const, texto: `¡Hola! Soy ${first}. Cuéntame qué necesitas para tu peludo.` },
-    ];
-    const initial: ChatMsg[] = base.map((m, i) => {
-      const d = new Date(Date.now() - (base.length - i) * 60_000);
-      return {
-        de: m.de,
-        texto: m.texto,
-        hora: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
-      };
-    });
-    CHAT_STORE.set(walker.id, initial);
-    return initial;
-  });
+  const { data: dbMensajes = [], refetch } = useChat(user?.id, walker.id);
+  const sendMutation = useSendMessage(user?.id, walker.id);
+
   const [draft, setDraft] = useState("");
+  const [optimista, setOptimista] = useState<ChatMsg[]>([]);
   const [escribiendo, setEscribiendo] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync from external updates (e.g. treat thank-you message)
-  useEffect(() => {
-    const unsub = subscribeChat((id) => {
-      if (id === walker.id) setMensajes(getChat(walker.id));
-    });
-    return unsub;
-  }, [walker.id]);
+  // Saludo inicial del cuidador mientras el hilo está vacío (no se persiste).
+  const intro: ChatMsg[] =
+    dbMensajes.length === 0 && optimista.length === 0
+      ? [
+          {
+            de: "ellos",
+            texto: `¡Hola! Soy ${first}. Cuéntame qué necesitas para tu peludo.`,
+            hora: "",
+          },
+        ]
+      : [];
+  const mensajes = [...intro, ...dbMensajes, ...optimista];
 
   useEffect(() => {
-    setChat(walker.id, mensajes);
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mensajes.length]);
+  }, [mensajes.length, escribiendo]);
 
-  useEffect(() => {
-    scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
-  }, [escribiendo]);
-
-  const responder = (texto: string) => {
-    setEscribiendo(true);
-    const respuesta = respuestaContextual(texto, first);
-    const delay = 1100 + Math.min(1200, respuesta.length * 18) + Math.random() * 400;
-    setTimeout(() => {
-      setEscribiendo(false);
-      setMensajes((m) => [...m, { de: "ellos", texto: respuesta, hora: ahora() }]);
-    }, delay);
-  };
-
-  const enviar = (texto: string) => {
+  const enviar = async (texto: string) => {
     const t = texto.trim();
-    if (!t) return;
-    setMensajes((m) => [...m, { de: "yo", texto: t, hora: ahora() }]);
+    if (!t || enviando) return;
+    if (!user?.id) {
+      toast.error("Aún no hay sesión. Recarga e inténtalo.");
+      return;
+    }
     setDraft("");
-    responder(t);
+    setEnviando(true);
+    setOptimista([{ de: "yo", texto: t, hora: ahora() }]);
+    setEscribiendo(true);
+    try {
+      await sendMutation.mutateAsync(t);
+      // Pausa breve para que se sienta la respuesta "escribiendo…".
+      await new Promise((r) => setTimeout(r, 900));
+      await refetch();
+    } catch {
+      toast.error("No se pudo enviar el mensaje.");
+    } finally {
+      setEscribiendo(false);
+      setOptimista([]);
+      setEnviando(false);
+    }
   };
 
   const sugerir = (texto: string) => {
@@ -145,7 +140,9 @@ function Chat() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1">
               <span className="truncate text-sm font-extrabold text-ink">{walker.nombre}</span>
-              {walker.verificado && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand" fill="#d6ebe0" />}
+              {walker.verificado && (
+                <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-brand" fill="#d6ebe0" />
+              )}
             </div>
             <div className="flex items-center gap-1 text-[11px] text-ink-soft">
               <span className="h-1.5 w-1.5 rounded-full bg-brand" />
@@ -164,7 +161,9 @@ function Chat() {
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${m.de === "yo" ? "justify-end" : "justify-start"}`}
             >
-              <div className={`max-w-[78%] ${m.de === "yo" ? "items-end" : "items-start"} flex flex-col`}>
+              <div
+                className={`max-w-[78%] ${m.de === "yo" ? "items-end" : "items-start"} flex flex-col`}
+              >
                 <div
                   className={`overflow-hidden rounded-2xl text-[14px] leading-snug ${
                     m.de === "yo"
@@ -181,7 +180,7 @@ function Chat() {
                   )}
                   <div className="px-3.5 py-2">{m.texto}</div>
                 </div>
-                <span className="mt-1 px-1 text-[10px] text-ink-soft">{m.hora}</span>
+                {m.hora && <span className="mt-1 px-1 text-[10px] text-ink-soft">{m.hora}</span>}
               </div>
             </motion.div>
           ))}
@@ -194,8 +193,12 @@ function Chat() {
                 className="flex justify-start"
               >
                 <div className="flex items-center gap-1 rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
-                  <Dot d={0} /><Dot d={0.15} /><Dot d={0.3} />
-                  <span className="ml-1 text-[11px] font-bold text-ink-soft">{first} está escribiendo</span>
+                  <Dot d={0} />
+                  <Dot d={0.15} />
+                  <Dot d={0.3} />
+                  <span className="ml-1 text-[11px] font-bold text-ink-soft">
+                    {first} está escribiendo
+                  </span>
                 </div>
               </motion.div>
             )}
@@ -235,7 +238,7 @@ function Chat() {
           />
           <button
             onClick={() => enviar(draft)}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || enviando}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white disabled:opacity-40"
             aria-label="Enviar"
           >
