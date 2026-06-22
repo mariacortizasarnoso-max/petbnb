@@ -1,11 +1,15 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, BadgeCheck, MapPin, ChevronLeft, ChevronRight, Check, Clock, Home, Utensils, Pill, PhoneCall, MessageCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { getWalker, type Walker } from "@/data/walkers";
+import type { Walker } from "@/data/walkers";
+import { useWalker } from "@/hooks/useWalker";
+import { useAuth } from "@/hooks/useAuth";
+import { useCreateBooking } from "@/hooks/useBookings";
 
 const search = z.object({
   q: z.string().default(""),
@@ -14,13 +18,41 @@ const search = z.object({
 
 export const Route = createFileRoute("/confirmar/$id")({
   validateSearch: (s) => search.parse(s),
-  loader: ({ params }) => {
-    const w = getWalker(params.id);
-    if (!w) throw notFound();
-    return { walker: w };
-  },
   component: Confirmar,
 });
+
+function Confirmar() {
+  const { id } = Route.useParams();
+  const { data: walker, isPending } = useWalker(id);
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Reservar" />
+        <main className="mx-auto max-w-md px-5 pt-6">
+          <div className="shimmer h-1.5 w-full rounded-full" />
+          <div className="shimmer mt-6 h-40 w-full rounded-3xl" />
+          <div className="shimmer mt-3 h-40 w-full rounded-3xl" />
+        </main>
+      </div>
+    );
+  }
+  if (!walker) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Reservar" />
+        <div className="mx-auto max-w-md px-5 pt-20 text-center">
+          <div className="text-5xl">🐾</div>
+          <h1 className="mt-4 text-xl font-black text-ink">No encontramos a este paseador</h1>
+          <Link to="/" className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white">
+            Volver al inicio
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <ConfirmarForm walker={walker} />;
+}
 
 type Tipo = "paseo" | "estancia";
 type Franja = "manana" | "mediodia" | "tarde";
@@ -32,10 +64,11 @@ const FRANJAS: { id: Franja; label: string; hora: string }[] = [
 const DOW = ["L", "M", "X", "J", "V", "S", "D"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
-function Confirmar() {
-  const { walker } = Route.useLoaderData() as { walker: Walker };
+function ConfirmarForm({ walker }: { walker: Walker }) {
   const { q, modo } = Route.useSearch();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const createBooking = useCreateBooking();
   const first = walker.nombre.split(" ")[0];
 
   const [paso, setPaso] = useState<1 | 2 | 3 | 4>(1);
@@ -119,16 +152,54 @@ function Confirmar() {
     4: tipo === "paseo" ? "Resumen del paseo" : "Resumen de la estancia",
   };
 
-  const confirmar = () => {
+  const confirmar = async () => {
     setConfirming(true);
-    setTimeout(() => {
-      if (tipo === "paseo" && esHoyPaseo && frecuencia === "puntual") {
-        navigate({ to: "/paseo/$id", params: { id: walker.id }, search: { perro, duracion } });
-      } else {
-        setConfirming(false);
-        setConfirmado(true);
-      }
-    }, 1300);
+    const esLiveWalk = tipo === "paseo" && esHoyPaseo && frecuencia === "puntual";
+    const irAlPaseo = (bookingId?: string) =>
+      navigate({
+        to: "/paseo/$id",
+        params: { id: walker.id },
+        search: { perro, duracion, ...(bookingId ? { bookingId } : {}) },
+      });
+
+    try {
+      if (!user?.id) throw new Error("sin sesión");
+      const booking = await createBooking.mutateAsync(
+        tipo === "paseo"
+          ? {
+              user_id: user.id,
+              walker_id: walker.id,
+              tipo: "paseo",
+              estado: esLiveWalk ? "en_curso" : "confirmada",
+              perro,
+              fecha_label: fechaPaseoLabel,
+              hora: horaPaseo,
+              duracion,
+              recogida: recogidaPaseo,
+              inicio_iso: esLiveWalk ? new Date().toISOString() : null,
+            }
+          : {
+              user_id: user.id,
+              walker_id: walker.id,
+              tipo: "estancia",
+              estado: "confirmada",
+              perro,
+              fecha_label: fechaEstanciaLabel,
+              noches,
+              recogida: `Casa de ${first} · ${walker.barrio}`,
+            },
+      );
+      if (esLiveWalk) return irAlPaseo(booking.id);
+      setConfirming(false);
+      setConfirmado(true);
+    } catch (e) {
+      // Degradación: si no hay sesión/persistencia, el flujo de demo continúa.
+      console.warn("petbnb: no se pudo guardar la reserva —", e);
+      if (esLiveWalk) return irAlPaseo();
+      setConfirming(false);
+      setConfirmado(true);
+      toast.error("No pudimos guardar la reserva, pero puedes continuar.");
+    }
   };
 
   return (

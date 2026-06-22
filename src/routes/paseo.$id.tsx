@@ -1,28 +1,59 @@
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { WalkMapClient } from "@/components/WalkMapClient";
-import { getWalker, type Walker } from "@/data/walkers";
+import type { Walker } from "@/data/walkers";
+import { useWalker } from "@/hooks/useWalker";
+import { closeWalk } from "@/lib/api/walk.server";
 
 const search = z.object({
   perro: z.string().default("Nala"),
   duracion: z.coerce.number().default(45),
+  bookingId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/paseo/$id")({
   validateSearch: (s) => search.parse(s),
-  loader: ({ params }) => {
-    const w = getWalker(params.id);
-    if (!w) throw notFound();
-    return { walker: w };
-  },
   component: Paseo,
 });
+
+function Paseo() {
+  const { id } = Route.useParams();
+  const { data: walker, isPending } = useWalker(id);
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Paseo en curso" />
+        <main className="mx-auto max-w-md px-3 pt-2">
+          <div className="shimmer h-16 w-full rounded-2xl" />
+          <div className="shimmer mt-3 h-[300px] w-full rounded-3xl" />
+        </main>
+      </div>
+    );
+  }
+  if (!walker) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Paseo en curso" />
+        <div className="mx-auto max-w-md px-5 pt-20 text-center">
+          <div className="text-5xl">🐾</div>
+          <h1 className="mt-4 text-xl font-black text-ink">No encontramos este paseo</h1>
+          <Link to="/reservas" className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white">
+            Ir a mis reservas
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <PaseoView walker={walker} />;
+}
 
 const ESTADOS = [
   { at: 0, text: "Han salido del portal" },
@@ -35,10 +66,10 @@ const ESTADOS = [
 const TOTAL_MS = 25000;
 const CHECKIN_AT = 0.4;
 
-function Paseo() {
-  const { walker } = Route.useLoaderData() as { walker: Walker };
-  const { perro, duracion } = Route.useSearch();
+function PaseoView({ walker }: { walker: Walker }) {
+  const { perro, duracion, bookingId } = Route.useSearch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const startRef = useRef<number>(Date.now());
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -72,11 +103,25 @@ function Paseo() {
     return () => clearInterval(t);
   }, [duracion, perro, first]);
 
+  // Al cerrarse el paseo, el cuidador (server-side) lo marca como completado e
+  // inserta el mensaje de cierre. Best-effort: la UI no se bloquea si falla.
+  useEffect(() => {
+    if (!finalizado || !bookingId) return;
+    closeWalk({ data: { bookingId } })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["bookings"] }))
+      .catch((e) => console.warn("petbnb: closeWalk falló —", e));
+  }, [finalizado, bookingId, queryClient]);
+
   const estado = [...ESTADOS].reverse().find((e) => progress >= e.at)?.text ?? ESTADOS[0].text;
   const km = (progress * (duracion / 45) * 1.8).toFixed(2);
   const etaMin = Math.max(0, Math.round((1 - progress) * duracion));
 
-  const verResumen = () => navigate({ to: "/completado/$id", params: { id: walker.id }, search: { perro, duracion, km } });
+  const verResumen = () =>
+    navigate({
+      to: "/completado/$id",
+      params: { id: walker.id },
+      search: { perro, duracion, km, ...(bookingId ? { bookingId } : {}) },
+    });
 
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
