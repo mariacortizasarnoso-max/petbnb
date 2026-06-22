@@ -11,24 +11,28 @@ contra los datos mock que ya existen (`src/data/*`).
 
 ---
 
-## EPIC 0 — Fundación · Responsable: ______
+## EPIC 0 — Fundación · Responsable: María + Jorge
 
 Crear Supabase, conectar clientes, claves en servidor, esquema + seguridad + seed.
 
-- [ ] **U1** — Proyecto Supabase + clientes (browser/anon y server/service-role) + secretos (`ANTHROPIC_API_KEY`, claves Supabase) en `.server.ts`, nunca con prefijo `VITE_`
-- [ ] **U2** — Esquema Postgres + RLS básica ("filas propias") + funciones SQL (`apply_treat_tx`) + seed (12 paseadores, partners, treats, reservas)
+- [x] **U1** — Proyecto Supabase + clientes (browser/anon y server/service-role) + secretos (`ANTHROPIC_API_KEY`, claves Supabase) en `.server.ts`, nunca con prefijo `VITE_`
+- [x] **U2** — Esquema Postgres + RLS básica ("filas propias") + funciones SQL (`apply_treat_tx`) + seed (12 paseadores, partners, treats, reservas)
 
-Estado EPIC: [ ] Cerrada y en `development`
+> ✔ Verificado 2026-06-22: 12 walkers, 5 treats, 3 partners, 10 products en Supabase `nwgusratfhenvlwnprpn`. RLS activa. `apply_treat_tx` desplegada. `.env` configurado localmente (DB password pendiente de añadir para `supabase db push`).
+
+Estado EPIC: [x] Cerrada y en `development`
 
 ---
 
-## EPIC 1 — Matching inteligente ⭐ · Responsable: ______
+## EPIC 1 — Matching inteligente ⭐ · Responsable: Jorge
 
 La llamada real a Claude. Es el "whoa" de la demo. Puede empezar **ya** contra mock.
 
-- [ ] **U5** — Server function `matchWalkers` (structured output, filtro SOS en servidor, validación de IDs, timeout 12s, fallback determinista con `matching.ts`); cablear `buscando.tsx` y `resultados.tsx`
+- [x] **U5** — Server function `matchWalkersServer` (`src/lib/api/matching.server.ts`): structured output (tool use), filtro SOS en servidor, validación de IDs, timeout 12s, fallback determinista con `matching.ts`; cableado en `buscando.tsx` (setQueryData) y `resultados.tsx` (useQuery). Pool: WALKERS mock. Tests T1–T8 pasando.
 
-Estado EPIC: [ ] Cerrada y en `development`
+> ✔ Verificado 2026-06-22: build limpio, SDK de Anthropic tree-shakeado del cliente (stub RPC 4.4 KB), ANTHROPIC_API_KEY nunca llega al browser. 14/14 tests verdes.
+
+Estado EPIC: [x] Cerrada y en `feat/epic1-matching-claude`
 
 ---
 

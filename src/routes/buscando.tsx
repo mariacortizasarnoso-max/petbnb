@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+import { matchWalkersServer } from "@/lib/api/matching.server";
 
 const search = z.object({
   q: z.string().default(""),
@@ -28,14 +30,31 @@ const MICROCOPY_SOS = [
 function Buscando() {
   const { q, modo } = Route.useSearch();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [i, setI] = useState(0);
   const msgs = modo === "sos" ? MICROCOPY_SOS : MICROCOPY_PLAN;
 
   useEffect(() => {
+    let cancelled = false;
     const t = setInterval(() => setI((x) => (x + 1) % msgs.length), 800);
-    const go = setTimeout(() => navigate({ to: "/resultados", search: { q, modo } }), modo === "sos" ? 2400 : 2000);
-    return () => { clearInterval(t); clearTimeout(go); };
-  }, [navigate, q, modo, msgs.length]);
+
+    matchWalkersServer({ data: { q, modo } })
+      .then((result) => {
+        if (cancelled) return;
+        queryClient.setQueryData(["match", q, modo], result);
+      })
+      .catch(() => {
+        // Fallback ya aplicado server-side; navegar igual
+      })
+      .finally(() => {
+        if (!cancelled) navigate({ to: "/resultados", search: { q, modo } });
+      });
+
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [navigate, q, modo, msgs.length, queryClient]);
 
   return (
     <div className="min-h-screen bg-cream">
