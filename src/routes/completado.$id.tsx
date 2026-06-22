@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -6,26 +6,52 @@ import { Star, Gift } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { WalkMapClient } from "@/components/WalkMapClient";
-import { getWalker, type Walker } from "@/data/walkers";
+import type { Walker } from "@/data/walkers";
+import { useWalker } from "@/hooks/useWalker";
 
 const search = z.object({
   perro: z.string().default("Nala"),
   duracion: z.coerce.number().default(45),
   km: z.string().default("1.80"),
+  bookingId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/completado/$id")({
   validateSearch: (s) => search.parse(s),
-  loader: ({ params }) => {
-    const w = getWalker(params.id);
-    if (!w) throw notFound();
-    return { walker: w };
-  },
   component: Completado,
 });
 
 function Completado() {
-  const { walker } = Route.useLoaderData() as { walker: Walker };
+  const { id } = Route.useParams();
+  const { data: walker, isPending } = useWalker(id);
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Paseo completado" />
+        <main className="mx-auto max-w-md px-5 pt-6">
+          <div className="shimmer h-56 w-full rounded-3xl" />
+        </main>
+      </div>
+    );
+  }
+  if (!walker) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Paseo completado" />
+        <div className="mx-auto max-w-md px-5 pt-20 text-center">
+          <div className="text-5xl">🐾</div>
+          <Link to="/reservas" className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white">
+            Ir a mis reservas
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <CompletadoView walker={walker} />;
+}
+
+function CompletadoView({ walker }: { walker: Walker }) {
   const { perro, duracion, km } = Route.useSearch();
   const navigate = useNavigate();
   const [stars, setStars] = useState(0);

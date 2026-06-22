@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BadgeCheck, ChevronRight, MessageCircle, MapPin, Star } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { reservasProximas, reservasPasadas, type Reserva } from "@/data/reservas";
-import { getWalker } from "@/data/walkers";
+import { type Reserva } from "@/data/reservas";
+import { useAuth } from "@/hooks/useAuth";
+import { useBookings } from "@/hooks/useBookings";
+import { useWalker } from "@/hooks/useWalker";
 
 export const Route = createFileRoute("/reservas")({
   head: () => ({
@@ -21,7 +23,9 @@ type Tab = "proximas" | "pasadas";
 
 function Reservas() {
   const [tab, setTab] = useState<Tab>("proximas");
-  const lista = tab === "proximas" ? reservasProximas() : reservasPasadas();
+  const { user } = useAuth();
+  const { proximas, pasadas, isPending } = useBookings(user?.id);
+  const lista = tab === "proximas" ? proximas : pasadas;
 
   return (
     <div className="pb-28">
@@ -39,7 +43,7 @@ function Reservas() {
               }`}
             >
               {t === "proximas" ? "Próximas" : "Pasadas"}
-              {t === "proximas" && reservasProximas().some((r) => r.estado === "en_curso") && (
+              {t === "proximas" && proximas.some((r) => r.estado === "en_curso") && (
                 <span className="absolute right-3 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-coral" />
               )}
             </button>
@@ -55,7 +59,8 @@ function Reservas() {
             transition={{ duration: 0.2 }}
             className="mt-4 space-y-3"
           >
-            {lista.length === 0 && <Empty tab={tab} />}
+            {isPending && [0, 1].map((k) => <div key={k} className="card-soft h-28 shimmer" />)}
+            {!isPending && lista.length === 0 && <Empty tab={tab} />}
             {lista.map((r, i) => (
               <motion.div
                 key={r.id}
@@ -115,7 +120,8 @@ function EstadoBadge({ estado }: { estado: Reserva["estado"] }) {
 
 function ReservaCard({ reserva }: { reserva: Reserva }) {
   const navigate = useNavigate();
-  const walker = getWalker(reserva.walkerId)!;
+  const { data: walker } = useWalker(reserva.walkerId);
+  if (!walker) return <div className="card-soft h-28 shimmer" />;
   const first = walker.nombre.split(" ")[0];
   const tipoLabel = reserva.tipo === "paseo" ? "Paseo 🦮" : "Estancia 🏠";
 
@@ -123,7 +129,7 @@ function ReservaCard({ reserva }: { reserva: Reserva }) {
     navigate({
       to: "/paseo/$id",
       params: { id: walker.id },
-      search: { perro: reserva.perro, duracion: reserva.duracion ?? 45 },
+      search: { perro: reserva.perro, duracion: reserva.duracion ?? 45, bookingId: reserva.id },
     });
 
   return (

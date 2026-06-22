@@ -1,60 +1,83 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BadgeCheck, MapPin, Clock, Star, X, MessageCircle, Gift } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { getReserva, RESERVAS, type Reserva } from "@/data/reservas";
-import { getWalker } from "@/data/walkers";
+import { type Reserva } from "@/data/reservas";
+import { useAuth } from "@/hooks/useAuth";
+import { useBooking, useCancelBooking } from "@/hooks/useBookings";
+import { useWalker } from "@/hooks/useWalker";
 
 export const Route = createFileRoute("/reservas/$id")({
-  loader: ({ params }) => {
-    const r = getReserva(params.id);
-    if (!r) throw notFound();
-    return { reserva: r };
-  },
   component: Detalle,
 });
 
 function Detalle() {
-  const { reserva: initial } = Route.useLoaderData() as { reserva: Reserva };
-  const navigate = useNavigate();
+  const { id } = Route.useParams();
+  const { data: reserva, isPending } = useBooking(id);
 
-  // Estado local mutable simulado (sin backend)
-  const [reserva, setReserva] = useState<Reserva>(initial);
-  const walker = getWalker(reserva.walkerId)!;
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Detalle de reserva" />
+        <main className="mx-auto max-w-md px-5 pt-2">
+          <div className="shimmer h-64 w-full rounded-3xl" />
+        </main>
+      </div>
+    );
+  }
+  if (!reserva) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Detalle de reserva" />
+        <div className="mx-auto max-w-md px-5 pt-20 text-center">
+          <div className="text-5xl">🐾</div>
+          <h1 className="mt-4 text-xl font-black text-ink">No encontramos esta reserva</h1>
+          <Link to="/reservas" className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white">
+            Ir a mis reservas
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <DetalleView reserva={reserva} />;
+}
+
+function DetalleView({ reserva }: { reserva: Reserva }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data: walker } = useWalker(reserva.walkerId);
+  const cancelBooking = useCancelBooking(user?.id);
+
+  const [confirmCancelar, setConfirmCancelar] = useState(false);
+  // Valoración: estado local (su persistencia llega con U8/reseñas).
+  const [stars, setStars] = useState(0);
+
+  if (!walker) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Detalle de reserva" />
+        <main className="mx-auto max-w-md px-5 pt-2">
+          <div className="shimmer h-64 w-full rounded-3xl" />
+        </main>
+      </div>
+    );
+  }
+
   const first = walker.nombre.split(" ")[0];
   const tipoLabel = reserva.tipo === "paseo" ? "Paseo 🦮" : "Estancia 🏠";
 
-  const [confirmCancelar, setConfirmCancelar] = useState(false);
-  const [tempStars, setTempStars] = useState(0);
-
-  // Refrescar desde RESERVAS por si volvemos del flujo de treats
-  const fresh = RESERVAS.find((r) => r.id === reserva.id);
-  if (fresh && (fresh.treatEnviado !== reserva.treatEnviado || fresh.treatNombre !== reserva.treatNombre)) {
-    setReserva(fresh);
-  }
-
   const cancelar = () => {
-    setReserva({ ...reserva, estado: "cancelada", cancelTexto: "Cancelaste esta reserva.", nota: undefined });
+    cancelBooking.mutate(reserva.id);
     setConfirmCancelar(false);
-    const idx = RESERVAS.findIndex((r) => r.id === reserva.id);
-    if (idx >= 0) RESERVAS[idx] = { ...RESERVAS[idx], estado: "cancelada", cancelTexto: "Cancelaste esta reserva." };
-  };
-
-  const valorar = (n: number) => {
-    setTempStars(n);
-    const updated = { ...reserva, valoracion: n };
-    setReserva(updated);
-    const idx = RESERVAS.findIndex((r) => r.id === reserva.id);
-    if (idx >= 0) RESERVAS[idx] = updated;
   };
 
   const goSeguimiento = () =>
     navigate({
       to: "/paseo/$id",
       params: { id: walker.id },
-      search: { perro: reserva.perro, duracion: reserva.duracion ?? 45 },
+      search: { perro: reserva.perro, duracion: reserva.duracion ?? 45, bookingId: reserva.id },
     });
 
   return (
@@ -101,9 +124,6 @@ function Detalle() {
               {reserva.recogida && (
                 <Row label="Recogida" value={reserva.recogida} icon={<MapPin className="h-3.5 w-3.5" />} />
               )}
-              {reserva.treatEnviado && reserva.treatNombre && (
-                <Row label="Treat enviado" value={`${reserva.treatNombre} 🦴`} />
-              )}
             </div>
 
             {reserva.nota && reserva.estado !== "cancelada" && (
@@ -116,26 +136,27 @@ function Detalle() {
               </div>
             )}
 
-            {reserva.estado === "cancelada" && reserva.cancelTexto && (
+            {reserva.estado === "cancelada" && (
               <div className="mt-4 rounded-2xl border border-border bg-cream-deep/40 p-3 text-[13px] text-ink-soft">
-                {reserva.cancelTexto}
+                Cancelaste esta reserva. Puedes volver a reservar cuando quieras.
               </div>
             )}
           </div>
         </motion.div>
 
-        {/* Valoración (completada sin valorar) */}
-        {reserva.estado === "completada" && !reserva.valoracion && (
+        {/* Valoración (completada) */}
+        {reserva.estado === "completada" && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="card-soft mt-4 p-5 text-center">
             <h3 className="font-extrabold text-ink">¿Cómo fue el paseo con {first}?</h3>
             <p className="mt-1 text-sm text-ink-soft">Tu valoración ayuda a otros vecinos.</p>
             <div className="mt-3 flex justify-center gap-1">
               {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} onClick={() => valorar(n)} className="p-1">
-                  <Star className={`h-8 w-8 transition ${n <= tempStars ? "fill-coral text-coral" : "text-cream-deep"}`} />
+                <button key={n} onClick={() => setStars(n)} className="p-1">
+                  <Star className={`h-8 w-8 transition ${n <= stars ? "fill-coral text-coral" : "text-cream-deep"}`} />
                 </button>
               ))}
             </div>
+            {stars > 0 && <p className="mt-2 text-xs font-bold text-brand">¡Gracias por tu valoración!</p>}
           </motion.div>
         )}
 
@@ -143,24 +164,16 @@ function Detalle() {
         {reserva.estado === "completada" && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="card-soft mt-4 p-5 text-center">
             <div className="text-3xl">🦴</div>
-            <h3 className="mt-1 font-extrabold text-ink">
-              {reserva.treatEnviado ? `Le enviaste: ${reserva.treatNombre}` : "Envíale un treat a " + first}
-            </h3>
-            {!reserva.treatEnviado ? (
-              <>
-                <p className="mt-1 text-sm text-ink-soft">Un detalle para agradecer su cariño con {reserva.perro}.</p>
-                <Link
-                  to="/treats/$id"
-                  params={{ id: walker.id }}
-                  search={{ reserva: reserva.id, perro: reserva.perro }}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-coral py-3.5 text-sm font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98]"
-                >
-                  <Gift className="h-4 w-4" /> Elegir un treat
-                </Link>
-              </>
-            ) : (
-              <p className="mt-1 text-sm text-brand font-bold">{first} ha recibido tu treat 🦴 ✓</p>
-            )}
+            <h3 className="mt-1 font-extrabold text-ink">Envíale un treat a {first}</h3>
+            <p className="mt-1 text-sm text-ink-soft">Un detalle para agradecer su cariño con {reserva.perro}.</p>
+            <Link
+              to="/treats/$id"
+              params={{ id: walker.id }}
+              search={{ reserva: reserva.id, perro: reserva.perro }}
+              className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-coral py-3.5 text-sm font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98]"
+            >
+              <Gift className="h-4 w-4" /> Elegir un treat
+            </Link>
           </motion.div>
         )}
 
@@ -189,16 +202,10 @@ function Detalle() {
               </button>
             </>
           )}
-          {reserva.estado === "completada" && (
+          {(reserva.estado === "completada" || reserva.estado === "cancelada") && (
             <Link to="/confirmar/$id" params={{ id: walker.id }} search={{ q: "", modo: "planificado" }}
               className="block w-full rounded-full border-2 border-brand bg-white py-3.5 text-center text-sm font-extrabold text-brand">
-              Repetir reserva con {first}
-            </Link>
-          )}
-          {reserva.estado === "cancelada" && (
-            <Link to="/confirmar/$id" params={{ id: walker.id }} search={{ q: "", modo: "planificado" }}
-              className="block w-full rounded-full bg-brand py-3.5 text-center text-sm font-extrabold text-white">
-              Reservar de nuevo
+              {reserva.estado === "completada" ? `Repetir reserva con ${first}` : "Reservar de nuevo"}
             </Link>
           )}
         </div>
@@ -226,8 +233,8 @@ function Detalle() {
                 <button onClick={() => setConfirmCancelar(false)} className="flex-1 rounded-full border border-border bg-white py-3 text-sm font-bold text-ink">
                   Volver
                 </button>
-                <button onClick={cancelar} className="flex-1 rounded-full bg-coral py-3 text-sm font-extrabold text-white">
-                  Sí, cancelar
+                <button onClick={cancelar} disabled={cancelBooking.isPending} className="flex-1 rounded-full bg-coral py-3 text-sm font-extrabold text-white disabled:opacity-60">
+                  {cancelBooking.isPending ? "Cancelando…" : "Sí, cancelar"}
                 </button>
               </div>
             </motion.div>
