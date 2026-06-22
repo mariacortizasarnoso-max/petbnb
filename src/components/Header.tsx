@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, User } from "lucide-react";
 
 type Props = { title?: string; back?: boolean };
 
@@ -23,7 +23,17 @@ export function Header({ title, back }: Props) {
           </Link>
         )}
         {title && <div className="text-sm font-bold text-ink truncate max-w-[60%]">{title}</div>}
-        <div className="w-10" />
+        {back ? (
+          <div className="w-10" />
+        ) : (
+          <Link
+            to="/perfil"
+            aria-label="Tu perfil"
+            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-cream-deep"
+          >
+            <User className="h-6 w-6 text-ink" />
+          </Link>
+        )}
       </div>
     </header>
   );

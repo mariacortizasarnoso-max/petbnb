@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { BottomNav } from "@/components/BottomNav";
+import { AuthProvider } from "@/hooks/useAuth";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -102,11 +103,13 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-cream text-ink">
-        <Outlet />
-        <BottomNav />
-      </div>
-      <Toaster position="top-center" richColors closeButton={false} />
+      <AuthProvider>
+        <div className="min-h-screen bg-cream text-ink">
+          <Outlet />
+          <BottomNav />
+        </div>
+        <Toaster position="top-center" richColors closeButton={false} />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

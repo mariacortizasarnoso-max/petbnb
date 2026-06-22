@@ -40,8 +40,11 @@ Estado EPIC: [x] Cerrada y en `feat/epic1-matching-claude`
 
 Login ligero (sin muro), perfil del dueño + perro, paseadores desde la BD.
 
-- [ ] **U3** — Auth ligera (sesión silenciosa/anónima; magic link opcional al reservar; el login NUNCA bloquea el flujo de búsqueda) + perfil + perro
+- [x] **U3** — Auth ligera (sesión silenciosa/anónima; magic link opcional al reservar; el login NUNCA bloquea el flujo de búsqueda) + perfil + perro
 - [x] **U4** — Paseadores y reseñas desde Postgres (hooks React Query); estados de carga y vacío
+
+> U3 (en PR): `AuthProvider`/`useAuth` abren sesión anónima al cargar (sin pantalla de login), exponen `linkEmail` (magic link, conserva el user_id) y `signOut`. Ruta `/perfil` (nombre + perro) accesible desde el icono del `Header`. RLS de `profiles`/`dogs` ya es de "filas propias" (rol `authenticated`, que las sesiones anónimas también reciben); el trigger `handle_new_user` crea profile+treat_balances sin asumir email.
+> 🔴 PRERREQUISITO DE DASHBOARD: activar **Authentication → Sign In/Providers → Allow anonymous sign-ins** en Supabase. Está DESHABILITADO ahora; sin él no se crea sesión (la búsqueda sigue funcionando, pero no se guardan perfil/reservas/treats).
 
 > U4 (en PR): `useWalkers`/`useWalker` leen `walkers`+`reviews` con anon key (RLS pública). Cableados `index.tsx` (home) y `paseador.$id.tsx` (detalle, con skeleton + "no encontrado"). `resultados.tsx` no cambia: recibe los walkers vía el server fn de matching.
 > ⚠️ Handoff a Jorge (U5): el pool de `matching.server.ts` sigue usando el array `WALKERS` mock. Cuando se quiera, cambiarlo a leer de `walkers` (DB) para alinear con U4. Por ahora son datos idénticos (la BD se sembró del mock), así que no hay divergencia.

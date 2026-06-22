@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TiendaRouteImport } from './routes/tienda'
 import { Route as ResultadosRouteImport } from './routes/resultados'
 import { Route as ReservasRouteImport } from './routes/reservas'
+import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as MisTreatsRouteImport } from './routes/mis-treats'
 import { Route as MensajesRouteImport } from './routes/mensajes'
 import { Route as BuscandoRouteImport } from './routes/buscando'
@@ -38,6 +39,11 @@ const ResultadosRoute = ResultadosRouteImport.update({
 const ReservasRoute = ReservasRouteImport.update({
   id: '/reservas',
   path: '/reservas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilRoute = PerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MisTreatsRoute = MisTreatsRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
   '/mis-treats': typeof MisTreatsRoute
+  '/perfil': typeof PerfilRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/tienda': typeof TiendaRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
   '/mis-treats': typeof MisTreatsRoute
+  '/perfil': typeof PerfilRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/tienda': typeof TiendaRoute
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/buscando': typeof BuscandoRoute
   '/mensajes': typeof MensajesRoute
   '/mis-treats': typeof MisTreatsRoute
+  '/perfil': typeof PerfilRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
   '/tienda': typeof TiendaRoute
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/buscando'
     | '/mensajes'
     | '/mis-treats'
+    | '/perfil'
     | '/reservas'
     | '/resultados'
     | '/tienda'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/buscando'
     | '/mensajes'
     | '/mis-treats'
+    | '/perfil'
     | '/reservas'
     | '/resultados'
     | '/tienda'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/buscando'
     | '/mensajes'
     | '/mis-treats'
+    | '/perfil'
     | '/reservas'
     | '/resultados'
     | '/tienda'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   BuscandoRoute: typeof BuscandoRoute
   MensajesRoute: typeof MensajesRoute
   MisTreatsRoute: typeof MisTreatsRoute
+  PerfilRoute: typeof PerfilRoute
   ReservasRoute: typeof ReservasRouteWithChildren
   ResultadosRoute: typeof ResultadosRoute
   TiendaRoute: typeof TiendaRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/reservas'
       fullPath: '/reservas'
       preLoaderRoute: typeof ReservasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perfil': {
+      id: '/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mis-treats': {
@@ -351,6 +371,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscandoRoute: BuscandoRoute,
   MensajesRoute: MensajesRoute,
   MisTreatsRoute: MisTreatsRoute,
+  PerfilRoute: PerfilRoute,
   ReservasRoute: ReservasRouteWithChildren,
   ResultadosRoute: ResultadosRoute,
   TiendaRoute: TiendaRoute,
