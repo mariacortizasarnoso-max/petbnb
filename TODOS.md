@@ -24,13 +24,15 @@ Estado EPIC: [x] Cerrada y en `development`
 
 ---
 
-## EPIC 1 — Matching inteligente ⭐ · Responsable: ______
+## EPIC 1 — Matching inteligente ⭐ · Responsable: Jorge
 
 La llamada real a Claude. Es el "whoa" de la demo. Puede empezar **ya** contra mock.
 
-- [ ] **U5** — Server function `matchWalkers` (structured output, filtro SOS en servidor, validación de IDs, timeout 12s, fallback determinista con `matching.ts`); cablear `buscando.tsx` y `resultados.tsx`
+- [x] **U5** — Server function `matchWalkersServer` (`src/lib/api/matching.server.ts`): structured output (tool use), filtro SOS en servidor, validación de IDs, timeout 12s, fallback determinista con `matching.ts`; cableado en `buscando.tsx` (setQueryData) y `resultados.tsx` (useQuery). Pool: WALKERS mock. Tests T1–T8 pasando.
 
-Estado EPIC: [ ] Cerrada y en `development`
+> ✔ Verificado 2026-06-22: build limpio, SDK de Anthropic tree-shakeado del cliente (stub RPC 4.4 KB), ANTHROPIC_API_KEY nunca llega al browser. 14/14 tests verdes.
+
+Estado EPIC: [x] Cerrada y en `feat/epic1-matching-claude`
 
 ---
 
