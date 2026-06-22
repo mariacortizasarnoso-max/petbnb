@@ -2,10 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import { Star, MapPin, BadgeCheck, ChevronRight, MessageCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { ScoreRing } from "@/components/ScoreRing";
-import { matchWalkers } from "@/lib/matching";
+import { matchWalkersServer } from "@/lib/api/matching.server";
 
 const search = z.object({
   q: z.string().default(""),
@@ -20,8 +21,36 @@ export const Route = createFileRoute("/resultados")({
 function Resultados() {
   const { q, modo } = Route.useSearch();
   const navigate = useNavigate();
-  const matches = matchWalkers(q, modo);
+  const { data: matches = [], isPending } = useQuery({
+    queryKey: ["match", q, modo],
+    queryFn: () => matchWalkersServer({ data: { q, modo } }),
+    staleTime: Infinity,
+  });
   const isSos = modo === "sos";
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back />
+        <main className="mx-auto max-w-md px-5 pt-12">
+          <div className="space-y-4">
+            {[0, 1, 2].map((k) => (
+              <div key={k} className="card-soft p-4">
+                <div className="flex items-center gap-3">
+                  <div className="shimmer h-14 w-14 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="shimmer h-3 w-3/5 rounded" />
+                    <div className="shimmer h-3 w-2/5 rounded" />
+                  </div>
+                  <div className="shimmer h-12 w-12 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-28">
