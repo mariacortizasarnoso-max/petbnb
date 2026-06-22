@@ -86,7 +86,12 @@ TODOS.md         # reparto de trabajo por EPICs
 
 ## Estado del proyecto
 
+Al **2026-06-22**. Producción en `https://petbnb-ashy.vercel.app/`.
+
 - **EPIC 0 (Fundación): COMPLETA.** Esquema en Supabase (13 tablas, RLS, `apply_treat_tx` con saldo materializado en `treat_balances`, seed de 12 paseadores). Vitest montado.
-- **EPIC 1 (Matching con Claude): en marcha.** Server function `matchWalkers` con fallback determinista reusando `src/lib/matching.ts`.
-- **Deploy en Vercel: funcionando** (producción + preview).
+- **EPIC 1 (Matching con Claude): COMPLETA.** Server function `matchWalkers` con fallback determinista (`src/lib/matching.ts`). Usa Claude si `ANTHROPIC_API_KEY` está en Vercel; si no, cae al determinista.
+- **EPIC 2 (Identidad y paseadores): COMPLETA y verificada en producción.** Sesión anónima silenciosa (`useAuth`/`AuthProvider`), perfil + perro (`/perfil`), paseadores y reseñas desde Postgres (`useWalkers`/`useWalker`).
+- **EPIC 3 (Reservas y chat): COMPLETA y verificada en producción.** Reservas persistentes + `closeWalk` (cierre server-side con mensaje del cuidador), chat persistente + auto-respuesta (`sendMessage`). Hooks `useBookings`/`useChat`.
+- **EPIC 4 (Economía de treats): pendiente.** Único bloque del MVP sin hacer; ahí se migrará `src/data/chatStore.ts` (aún usado por `treats.$id`).
+- **Deploy en Vercel: funcionando** (producción + preview). Requiere en Vercel: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (la usan los server fns) y `ANTHROPIC_API_KEY`. Las **sesiones anónimas** deben estar activadas en Supabase (Authentication → Allow anonymous sign-ins). Deployment Protection **desactivada** para que la app sea pública.
 - Planes y reparto: `docs/plans/` y `TODOS.md`.

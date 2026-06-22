@@ -6,11 +6,15 @@ Conecta a dueños de perros con paseadores y cuidadores vecinos del barrio, con 
 
 ## Estado actual
 
-En construcción activa, **ya desplegado en producción** (Vercel).
+**Funcional y desplegado en producción** (Vercel): `https://petbnb-ashy.vercel.app/`.
 
 - **EPIC 0 (Fundación): completa.** Persistencia real en Supabase (esquema con RLS, transacción de treats con saldo materializado, seed de paseadores).
-- **EPIC 1 (Matching con Claude): en marcha.** Recomendación real vía server function, con fallback determinista.
-- Nació como prototipo con datos mock generado con Lovable; ese estado ya quedó atrás según se conecta el backend real. Las pantallas que aún usen mock se irán cableando a Supabase.
+- **EPIC 1 (Matching con Claude): completa.** Recomendación real vía server function, con fallback determinista.
+- **EPIC 2 (Identidad y paseadores): completa.** Sesión anónima sin login, perfil + perro, paseadores y reseñas desde la base de datos.
+- **EPIC 3 (Reservas y chat): completa.** Reservas que persisten con cierre del paseo por el cuidador, y chat persistente con auto-respuesta. Verificadas de extremo a extremo en producción.
+- **EPIC 4 (Treats): pendiente** — saldo real de la moneda de fidelización. Único bloque del MVP por construir.
+
+Nació como prototipo con datos mock (Lovable); ese estado quedó atrás. Lo que aún use mock (p. ej. el agradecimiento con treats) se cablea en EPIC 4.
 
 ## Cómo construirlo (lee esto antes de empezar)
 
