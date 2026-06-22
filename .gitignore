@@ -36,3 +36,10 @@ dist-ssr
 *.sln
 *.sw?
 .gstack/
+
+# Vercel
+.vercel/
+
+# Next.js (artefactos espurios — este proyecto es TanStack Start)
+.next/
+next-env.d.ts
