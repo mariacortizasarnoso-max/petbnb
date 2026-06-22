@@ -49,7 +49,7 @@ Login ligero (sin muro), perfil del dueño + perro, paseadores desde la BD.
 > U4 (en PR): `useWalkers`/`useWalker` leen `walkers`+`reviews` con anon key (RLS pública). Cableados `index.tsx` (home) y `paseador.$id.tsx` (detalle, con skeleton + "no encontrado"). `resultados.tsx` no cambia: recibe los walkers vía el server fn de matching.
 > ⚠️ Handoff a Jorge (U5): el pool de `matching.server.ts` sigue usando el array `WALKERS` mock. Cuando se quiera, cambiarlo a leer de `walkers` (DB) para alinear con U4. Por ahora son datos idénticos (la BD se sembró del mock), así que no hay divergencia.
 
-Estado EPIC: [ ] Cerrada y en `development`
+Estado EPIC: [x] **Cerrada y en `main` (producción). Verificada e2e en `petbnb-ashy.vercel.app` el 2026-06-22** (paseadores desde DB + sesión anónima sin errores de consola).
 
 ---
 
@@ -65,7 +65,7 @@ Reservas (paseo y estancia) que persisten; chat persistente; cierre por el cuida
 > U6 (en PR): `useBookings` (crear/listar/cancelar reservas, cliente+RLS) cablea `confirmar.$id` (inserta booking), `reservas` y `reservas.$id` (leen de DB, cancelar). `paseo.$id`/`completado.$id` pasan a leer el paseador con `useWalker` y reciben el `bookingId` por search param. `closeWalk` (server fn en `src/lib/api/walk.server.ts`, service-role) transiciona `en_curso→completada` e inserta el mensaje de cierre del cuidador en el hilo de chat; idempotente. Validado e2e: insert/select de bookings con RLS, y la lógica de closeWalk a nivel de BD.
 > 🔴 PRERREQUISITO: `SUPABASE_SERVICE_ROLE_KEY` en Vercel (y en `.env` local para probar). Sin ella, crear/listar/cancelar reservas funciona, pero `closeWalk` no podrá auto-completar el paseo ni escribir el mensaje de cierre. Nota: ⚠️ `**/server/**` está vetado para importar desde cliente por el wrapper de Lovable → los server fns van en `src/lib/api/*.server.ts`.
 
-Estado EPIC: [ ] Cerrada y en `development`
+Estado EPIC: [x] **Cerrada y en `main` (producción). Verificada e2e en producción el 2026-06-22**: reservar paseo de hoy → `closeWalk` marca `completada` + mensaje de cierre (~9 s); enviar chat → el cuidador responde y persiste tras recargar. `SUPABASE_SERVICE_ROLE_KEY` configurada en Vercel.
 
 ---
 
