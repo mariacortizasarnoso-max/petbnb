@@ -234,7 +234,7 @@ function ChatView({ walker }: { walker: Walker }) {
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && enviar(draft)}
             placeholder="Escribe un mensaje…"
-            className="flex-1 rounded-full border border-border bg-cream px-4 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+            className="flex-1 rounded-full border border-border bg-cream px-4 py-2.5 text-base text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
           <button
             onClick={() => enviar(draft)}
