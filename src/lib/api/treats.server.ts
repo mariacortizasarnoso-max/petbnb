@@ -21,7 +21,8 @@ const sendGiftSchema = z.object({
 const redeemSchema = z.object({
   userId: z.string().uuid(),
   productId: z.string().min(1),
-  costoTreats: z.number().positive(),
+  // El coste NO se acepta del cliente: lo lee el servidor de `products` (evita
+  // que un cliente manipulado canjee un producto caro por menos treats).
   direccion: z.string().min(1),
   idempotencyKey: z.string().min(1),
 });
@@ -76,70 +77,105 @@ export const getTransactionsServer = createServerFn({ method: "GET" })
 
 export const sendGiftServer = createServerFn({ method: "POST" })
   .inputValidator(sendGiftSchema)
-  .handler(async ({ data }): Promise<{ ok: true; newBalance: number } | { ok: false; reason: string }> => {
-    const { getSupabaseAdmin } = await import("@/lib/supabase/server");
-    const admin = getSupabaseAdmin();
+  .handler(
+    async ({ data }): Promise<{ ok: true; newBalance: number } | { ok: false; reason: string }> => {
+      const { getSupabaseAdmin } = await import("@/lib/supabase/server");
+      const admin = getSupabaseAdmin();
 
-    const { data: newBalance, error } = await admin.rpc("apply_treat_tx", {
-      p_user: data.userId,
-      p_delta: -data.delta,
-      p_kind: "gift",
-      p_idempotency_key: data.idempotencyKey,
-      p_walker_id: data.walkerId,
-      p_label: data.label ?? "Treat enviado",
-      p_emoji: data.emoji ?? "🦴",
-      p_note: data.note,
-    });
+      const { data: newBalance, error } = await admin.rpc("apply_treat_tx", {
+        p_user: data.userId,
+        p_delta: -data.delta,
+        p_kind: "gift",
+        p_idempotency_key: data.idempotencyKey,
+        p_walker_id: data.walkerId,
+        p_label: data.label ?? "Treat enviado",
+        p_emoji: data.emoji ?? "🦴",
+        p_note: data.note,
+      });
 
-    if (error) {
-      // apply_treat_tx lanza error de Postgres cuando el saldo quedaría negativo
-      if (error.message?.includes("saldo insuficiente") || error.code === "P0001") {
-        return { ok: false, reason: "insufficient_balance" };
+      if (error) {
+        // apply_treat_tx lanza 'saldo insuficiente' (errcode check_violation) si
+        // el saldo quedaría negativo.
+        if (error.message?.includes("saldo insuficiente")) {
+          return { ok: false, reason: "insufficient_balance" };
+        }
+        throw error;
       }
-      throw error;
-    }
 
-    return { ok: true, newBalance: newBalance as number };
-  });
+      return { ok: true, newBalance: newBalance as number };
+    },
+  );
 
 export const redeemProductServer = createServerFn({ method: "POST" })
   .inputValidator(redeemSchema)
-  .handler(async ({ data }): Promise<{ ok: true; redemptionId: string; newBalance: number } | { ok: false; reason: string }> => {
-    const { getSupabaseAdmin } = await import("@/lib/supabase/server");
-    const admin = getSupabaseAdmin();
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      { ok: true; redemptionId: string; newBalance: number } | { ok: false; reason: string }
+    > => {
+      const { getSupabaseAdmin } = await import("@/lib/supabase/server");
+      const admin = getSupabaseAdmin();
 
-    // 1. Descontar del ledger (guard de no-negativo en apply_treat_tx)
-    const { data: newBalance, error: txError } = await admin.rpc("apply_treat_tx", {
-      p_user: data.userId,
-      p_delta: -data.costoTreats,
-      p_kind: "redeem",
-      p_idempotency_key: data.idempotencyKey,
-      p_ref: data.productId,
-      p_label: "Canje en tienda",
-      p_emoji: "🛍️",
-    });
+      // 0. Coste autoritativo: leerlo del producto en la BD, no del cliente.
+      const { data: product, error: prodError } = await admin
+        .from("products")
+        .select("costo_treats")
+        .eq("id", data.productId)
+        .maybeSingle();
+      if (prodError) throw prodError;
+      if (!product) return { ok: false, reason: "product_not_found" };
+      const costoTreats = product.costo_treats;
 
-    if (txError) {
-      if (txError.message?.includes("saldo insuficiente") || txError.code === "P0001") {
-        return { ok: false, reason: "insufficient_balance" };
+      // 1. Descontar del ledger (guard de no-negativo + idempotencia en apply_treat_tx)
+      const { data: newBalance, error: txError } = await admin.rpc("apply_treat_tx", {
+        p_user: data.userId,
+        p_delta: -costoTreats,
+        p_kind: "redeem",
+        p_idempotency_key: data.idempotencyKey,
+        p_ref: data.productId,
+        p_label: "Canje en tienda",
+        p_emoji: "🛍️",
+      });
+
+      if (txError) {
+        if (txError.message?.includes("saldo insuficiente")) {
+          return { ok: false, reason: "insufficient_balance" };
+        }
+        throw txError;
       }
-      throw txError;
-    }
 
-    // 2. Registrar el canje (solo si el cargo fue exitoso)
-    const { data: redemption, error: redError } = await admin
-      .from("redemptions")
-      .insert({
-        user_id: data.userId,
-        product_id: data.productId,
-        costo_treats: data.costoTreats,
-        direccion: data.direccion,
-        estado: "en_camino",
-      })
-      .select("id")
-      .single();
+      // 2. Registrar el canje. Si el insert falla, se revierte el cargo
+      //    (reembolso compensatorio) para no dejar treats descontados sin canje.
+      const { data: redemption, error: redError } = await admin
+        .from("redemptions")
+        .insert({
+          user_id: data.userId,
+          product_id: data.productId,
+          costo_treats: costoTreats,
+          direccion: data.direccion,
+          estado: "en_camino",
+        })
+        .select("id")
+        .single();
 
-    if (redError) throw redError;
+      if (redError) {
+        try {
+          await admin.rpc("apply_treat_tx", {
+            p_user: data.userId,
+            p_delta: costoTreats, // devolver lo descontado
+            p_kind: "earn",
+            p_idempotency_key: `${data.idempotencyKey}-refund`,
+            p_ref: data.productId,
+            p_label: "Reembolso de canje no completado",
+            p_emoji: "↩️",
+          });
+        } catch (refundErr) {
+          console.warn("petbnb: el canje falló y el reembolso también —", refundErr);
+        }
+        throw redError;
+      }
 
-    return { ok: true, redemptionId: redemption.id, newBalance: newBalance as number };
-  });
+      return { ok: true, redemptionId: redemption.id, newBalance: newBalance as number };
+    },
+  );

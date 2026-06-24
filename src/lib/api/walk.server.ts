@@ -72,7 +72,9 @@ export const closeWalk = createServerFn({ method: "POST" })
       await admin.rpc("apply_treat_tx", {
         p_user: booking.user_id,
         p_delta: TREATS_POR_PASEO,
-        p_kind: "paseo",
+        // 'earn' (no 'paseo'): el CHECK de treat_transactions solo admite
+        // earn/gift/redeem; con 'paseo' el INSERT fallaba y el crédito se perdía.
+        p_kind: "earn",
         p_idempotency_key: `paseo-${booking.id}`,
         p_ref: booking.id,
         p_label: "Paseo completado 🐾",
