@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBalance } from "@/hooks/useTreats";
 import { usePartners, useProducts, type Partner } from "@/hooks/useProducts";
 
-export const Route = createFileRoute("/tienda")({
+export const Route = createFileRoute("/tienda/")({
   component: Tienda,
 });
 
