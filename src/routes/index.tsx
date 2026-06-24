@@ -16,7 +16,7 @@ export const Route = createFileRoute("/")({
 });
 
 const PLACEHOLDER =
-  "Mi golden tiene 3 años, es muy cariñosa pero se pone nerviosa cuando ve a otros perros. Necesita un paseo tranquilo de una hora...";
+  "Golden de 3 años, se pone nerviosa con otros perros. Busco paseo tranquilo de 1 hora, mañana por la mañana...";
 
 function Home() {
   const [text, setText] = useState("");
@@ -56,7 +56,7 @@ function Home() {
           className="card-soft mt-6 p-4"
         >
           <label htmlFor="dog" className="text-sm font-bold text-ink">
-            Cuéntame cómo es tu perro
+            Cuéntame sobre tu perro y qué necesitas
           </label>
           <textarea
             id="dog"
@@ -67,7 +67,7 @@ function Home() {
             className="mt-2 w-full resize-none rounded-2xl border border-border bg-cream/60 p-3 text-[15px] leading-snug text-ink placeholder:text-ink-soft/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
           <div className="mt-1 flex items-center justify-between text-xs text-ink-soft">
-            <span>Cuanto más nos cuentes, mejor encaje.</span>
+            <span>Incluye: raza, carácter, qué necesitas y cuándo.</span>
             <span className={text.length >= 10 ? "text-brand font-bold" : ""}>{text.length}/10</span>
           </div>
           <button

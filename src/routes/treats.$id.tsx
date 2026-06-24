@@ -1,26 +1,20 @@
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Check, CreditCard, Lock } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import { getWalker, type Walker } from "@/data/walkers";
-import { TREATS, type Treat } from "@/data/treats";
-import { RESERVAS } from "@/data/reservas";
-import {
-  addTreatEnviado,
-  marcarRecibido,
-  fotoAleatoria,
-  mensajeAgradecimiento,
-  getSaldo,
-  gastarSaldo,
-  subscribeTreats,
-  TREATS_POR_EUR,
-} from "@/data/treatsHistory";
-import { pushMessage, ahora } from "@/data/chatStore";
+import { useWalker } from "@/hooks/useWalker";
+import { useAuth } from "@/hooks/useAuth";
+import { useBalance, useInvalidateTreats, TREATS_POR_EUR } from "@/hooks/useTreats";
+import { sendGiftServer } from "@/lib/api/treats.server";
+import { supabase } from "@/lib/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { PaymentMethodSelector, type Metodo } from "@/components/PaymentMethodSelector";
+import { pushMessage, ahora } from "@/data/chatStore";
+import { fotoAleatoria, mensajeAgradecimiento } from "@/data/treatsHistory";
 
 const search = z.object({
   reserva: z.string().optional(),
@@ -29,76 +23,125 @@ const search = z.object({
 
 export const Route = createFileRoute("/treats/$id")({
   validateSearch: (s) => search.parse(s),
-  loader: ({ params }) => {
-    const w = getWalker(params.id);
-    if (!w) throw notFound();
-    return { walker: w };
-  },
   component: TreatsCatalogo,
 });
 
 type Paso = "catalogo" | "pago" | "procesando" | "exito";
 
+type TreatItem = { id: string; nombre: string; emoji: string; descripcion: string; precio: number };
+
+function useTreatsDB() {
+  return useQuery({
+    queryKey: ["treats-catalog"],
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<TreatItem[]> => {
+      const { data, error } = await supabase.from("treats").select("*");
+      if (error) throw error;
+      return (data ?? []).map((t) => ({
+        id: t.id,
+        nombre: t.nombre,
+        emoji: t.emoji ?? "🦴",
+        descripcion: t.descripcion ?? "",
+        precio: t.precio,
+      }));
+    },
+  });
+}
+
 function TreatsCatalogo() {
-  const { walker } = Route.useLoaderData() as { walker: Walker };
-  const { reserva: reservaId, perro } = Route.useSearch();
+  const { id } = Route.useParams();
+  const { perro } = Route.useSearch();
   const navigate = useNavigate();
-  const first = walker.nombre.split(" ")[0];
+  const { user } = useAuth();
+
+  const { data: walker, isPending: loadingWalker } = useWalker(id);
+  const { data: treats = [], isPending: loadingTreats } = useTreatsDB();
+  const { data: saldo = 0 } = useBalance(user?.id);
+  const invalidateTreats = useInvalidateTreats();
 
   const [paso, setPaso] = useState<Paso>("catalogo");
-  const [seleccion, setSeleccion] = useState<Treat | null>(null);
+  const [seleccion, setSeleccion] = useState<TreatItem | null>(null);
   const [metodo, setMetodo] = useState<Metodo>("treats");
-
-  const [, force] = useState(0);
-  useEffect(() => subscribeTreats(() => force((n) => n + 1)), []);
-  const saldo = getSaldo();
 
   // tarjeta mock
   const [num, setNum] = useState("4242 4242 4242 4242");
   const [exp, setExp] = useState("12/27");
   const [cvc, setCvc] = useState("123");
 
+  if (loadingWalker || loadingTreats) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Treats" />
+        <main className="mx-auto max-w-md px-5 pt-6 space-y-4">
+          <div className="shimmer h-20 w-full rounded-3xl" />
+          <div className="grid grid-cols-2 gap-3">
+            {[0, 1, 2, 3].map((i) => <div key={i} className="shimmer h-36 rounded-2xl" />)}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!walker) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Treats" />
+        <div className="mx-auto max-w-md px-5 pt-20 text-center">
+          <p className="text-ink-soft">Paseador no encontrado.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const first = walker.nombre.split(" ")[0];
   const costoTreats = seleccion ? seleccion.precio * TREATS_POR_EUR : 0;
-  const elegir = (t: Treat) => {
+
+  const elegir = (t: TreatItem) => {
     setSeleccion(t);
     const cTreats = t.precio * TREATS_POR_EUR;
     setMetodo(saldo >= cTreats ? "treats" : "tarjeta");
     setPaso("pago");
   };
 
-  const pagar = () => {
+  const pagar = async () => {
     if (!seleccion) return;
+
     if (metodo === "treats") {
-      const ok = gastarSaldo(costoTreats);
-      if (!ok) {
+      if (!user?.id) {
+        toast.error("Necesitas una cuenta para pagar con treats");
+        return;
+      }
+      setPaso("procesando");
+      const idempotencyKey = `${user.id}-gift-${walker.id}-${seleccion.id}-${Date.now()}`;
+      const result = await sendGiftServer({
+        data: {
+          userId: user.id,
+          walkerId: walker.id,
+          delta: costoTreats,
+          idempotencyKey,
+          label: `Treat: ${seleccion.nombre}`,
+          emoji: seleccion.emoji,
+        },
+      });
+
+      if (!result.ok) {
+        setPaso("pago");
         toast.error("Saldo insuficiente. Te faltan " + (costoTreats - saldo) + " 🦴");
         return;
       }
+      invalidateTreats(user.id);
+    } else {
+      // Tarjeta simulada — sin cargo en el ledger
+      setPaso("procesando");
     }
-    setPaso("procesando");
+
     setTimeout(() => {
       setPaso("exito");
-      // persistir en reserva si viene una
-      if (reservaId) {
-        const idx = RESERVAS.findIndex((r) => r.id === reservaId);
-        if (idx >= 0) RESERVAS[idx] = { ...RESERVAS[idx], treatEnviado: true, treatNombre: seleccion.nombre };
-      }
-
-      const enviado = addTreatEnviado({
-        treatId: seleccion.id,
-        treatNombre: seleccion.nombre,
-        emoji: seleccion.emoji,
-        precio: seleccion.precio,
-        walkerId: walker.id,
-        walkerNombre: walker.nombre,
-        perro,
-      });
-
+      // Mensaje de agradecimiento del cuidador en el chat (sigue usando chatStore)
       setTimeout(() => {
         const foto = fotoAleatoria();
         const texto = mensajeAgradecimiento(first, seleccion.nombre, perro);
         pushMessage(walker.id, { de: "ellos", texto, hora: ahora(), foto });
-        marcarRecibido(enviado.id, foto, texto);
         toast.success(`${first} ha recibido tu treat 🦴`, {
           description: texto,
           duration: 5500,
@@ -106,8 +149,6 @@ function TreatsCatalogo() {
       }, 1600);
     }, 1500);
   };
-
-
 
   return (
     <div className="min-h-screen pb-20 bg-cream">
@@ -124,7 +165,7 @@ function TreatsCatalogo() {
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              {TREATS.map((t) => (
+              {treats.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => elegir(t)}
@@ -223,7 +264,6 @@ function TreatsCatalogo() {
 
         {paso === "exito" && seleccion && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative mt-6 overflow-visible">
-            {/* confeti de huesos */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-72 overflow-visible">
               {Array.from({ length: 22 }).map((_, i) => (
                 <motion.span
@@ -270,7 +310,6 @@ function TreatsCatalogo() {
                   Enviar otro treat
                 </button>
               </div>
-
             </div>
           </motion.div>
         )}

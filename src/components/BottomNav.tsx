@@ -9,7 +9,7 @@ const ITEMS = [
   { to: "/mis-treats" as const, label: "Mis treats", icon: Gift, match: (p: string) => p.startsWith("/mis-treats") },
 ];
 
-const HIDE_ON = ["/chat/", "/paseo/", "/buscando", "/confirmar/", "/completado/", "/treats/", "/canjear/"];
+const HIDE_ON = ["/chat/", "/paseo/", "/buscando", "/confirmar/", "/completado/", "/treats/", "/canjear/", "/paseador/"];
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

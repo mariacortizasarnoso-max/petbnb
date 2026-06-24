@@ -1,21 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ShoppingBag, ArrowUpRight } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
-import {
-  getEnviados,
-  getRecibidos,
-  getCanjes,
-  getSaldo,
-  subscribeTreats,
-  totales,
-  type TreatEnviado,
-  type TreatRecibido,
-  type Canje,
-} from "@/data/treatsHistory";
-import { getWalker } from "@/data/walkers";
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useBalance, useTransactions } from "@/hooks/useTreats";
 
 export const Route = createFileRoute("/mis-treats")({
   component: MisTreats,
@@ -23,17 +13,61 @@ export const Route = createFileRoute("/mis-treats")({
 
 type Tab = "enviados" | "recibidos" | "canjes";
 
+// Tipos de transacciones tal como vienen de getTransactionsServer
+type TxRow = {
+  id: string;
+  kind: string;
+  delta: number;
+  label: string | null;
+  emoji: string | null;
+  counterparty: string | null;
+  walker_id: string | null;
+  created_at: string;
+  photo_url: string | null;
+};
+
+type RedemptionRow = {
+  id: string;
+  costo_treats: number;
+  estado: string;
+  direccion: string | null;
+  created_at: string;
+  products: {
+    nombre: string;
+    emoji: string | null;
+    partner_id: string;
+    partners: { nombre: string; color: string | null; text_color: string | null } | null;
+  } | null;
+};
+
+function formatFecha(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffDays = Math.floor(diffMs / 86_400_000);
+  if (diffDays === 0) return "Hoy";
+  if (diffDays === 1) return "Ayer";
+  if (diffDays < 7) return `Hace ${diffDays} días`;
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
+
 function MisTreats() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("enviados");
-  const [, force] = useState(0);
-  useEffect(() => subscribeTreats(() => force((n) => n + 1)), []);
 
-  const enviados = getEnviados();
-  const recibidos = getRecibidos();
-  const canjes = getCanjes();
-  const saldo = getSaldo();
-  const t = totales();
+  const { data: saldo = 0 } = useBalance(user?.id);
+  const { data: txData, isPending } = useTransactions(user?.id);
+
+  const transactions: TxRow[] = (txData?.transactions ?? []) as TxRow[];
+  const redemptions: RedemptionRow[] = (txData?.redemptions ?? []) as RedemptionRow[];
+
+  const enviados = transactions.filter((t) => t.kind === "gift");
+  const recibidos = transactions.filter((t) => t.delta > 0);
+  const canjesCount = redemptions.length;
+
+  const totEnviados = enviados.length;
+  const totTreatsGanados = recibidos.reduce((s, t) => s + t.delta, 0);
 
   return (
     <div className="min-h-screen pb-24 bg-cream">
@@ -61,9 +95,9 @@ function MisTreats() {
             </Link>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <Stat valor={t.enviados} etiqueta="Enviados" />
-            <Stat valor={t.treatsRecibidos} etiqueta="🦴 ganados" />
-            <Stat valor={t.canjes} etiqueta="Canjes" />
+            <Stat valor={totEnviados} etiqueta="Enviados" />
+            <Stat valor={totTreatsGanados} etiqueta="🦴 ganados" />
+            <Stat valor={canjesCount} etiqueta="Canjes" />
           </div>
         </motion.div>
 
@@ -81,14 +115,20 @@ function MisTreats() {
                 ? `Enviados (${enviados.length})`
                 : k === "recibidos"
                 ? `Recibidos (${recibidos.length})`
-                : `Canjes (${canjes.length})`}
+                : `Canjes (${canjesCount})`}
             </button>
           ))}
         </div>
 
         {/* Contenido */}
         <div className="mt-4 space-y-3">
-          {tab === "enviados" && (
+          {isPending && (
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => <div key={i} className="shimmer h-20 w-full rounded-2xl" />)}
+            </div>
+          )}
+
+          {!isPending && tab === "enviados" && (
             enviados.length === 0 ? (
               <EmptyState
                 titulo="Aún no has enviado ningún treat"
@@ -97,10 +137,11 @@ function MisTreats() {
                 onCta={() => navigate({ to: "/" })}
               />
             ) : (
-              enviados.map((e) => <CardEnviado key={e.id} item={e} />)
+              enviados.map((t) => <CardGift key={t.id} tx={t} />)
             )
           )}
-          {tab === "recibidos" && (
+
+          {!isPending && tab === "recibidos" && (
             recibidos.length === 0 ? (
               <EmptyState
                 titulo="Aún no has recibido ningún treat"
@@ -109,11 +150,12 @@ function MisTreats() {
                 onCta={() => navigate({ to: "/" })}
               />
             ) : (
-              recibidos.map((r) => <CardRecibido key={r.id} item={r} />)
+              recibidos.map((t) => <CardEarned key={t.id} tx={t} />)
             )
           )}
-          {tab === "canjes" && (
-            canjes.length === 0 ? (
+
+          {!isPending && tab === "canjes" && (
+            redemptions.length === 0 ? (
               <EmptyState
                 titulo="Aún no has canjeado nada"
                 texto="Cambia tus treats por productos de nuestras marcas partner 🛍️"
@@ -121,7 +163,7 @@ function MisTreats() {
                 onCta={() => navigate({ to: "/tienda" })}
               />
             ) : (
-              canjes.map((c) => <CardCanje key={c.id} item={c} />)
+              redemptions.map((r) => <CardCanje key={r.id} redemption={r} />)
             )
           )}
         </div>
@@ -139,71 +181,38 @@ function Stat({ valor, etiqueta }: { valor: number; etiqueta: string }) {
   );
 }
 
-function CardEnviado({ item }: { item: TreatEnviado }) {
-  const walker = getWalker(item.walkerId);
+function CardGift({ tx }: { tx: TxRow }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="card-soft overflow-hidden"
-    >
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="card-soft overflow-hidden">
       <div className="flex items-center gap-3 p-4">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cream-deep text-3xl">
-          {item.emoji}
+          {tx.emoji ?? "🦴"}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="truncate font-extrabold text-ink">{item.treatNombre}</div>
+            <div className="truncate font-extrabold text-ink">{tx.label ?? "Treat enviado"}</div>
             <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-extrabold text-brand">
-              {item.precio * 10} 🦴
+              {Math.abs(tx.delta)} 🦴
             </span>
           </div>
-          <div className="mt-0.5 text-xs text-ink-soft">
-            Para <span className="font-bold text-ink">{item.walkerNombre.split(" ")[0]}</span> · {item.fechaLabel}
-          </div>
-          <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-extrabold">
-            {item.estado === "recibido" ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-brand">
-                Recibido ✓
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-cream-deep px-2 py-0.5 text-ink-soft">
-                Entregado · esperando respuesta
-              </span>
-            )}
-          </div>
+          {tx.counterparty && (
+            <div className="mt-0.5 text-xs text-ink-soft">
+              Para <span className="font-bold text-ink">{tx.counterparty}</span>
+            </div>
+          )}
+          <div className="mt-1 text-[11px] text-ink-soft">{formatFecha(tx.created_at)}</div>
         </div>
-        {walker && (
-          <SafeImage
-            src={walker.foto}
-            alt={walker.nombre}
-            rounded
-            fallbackText={walker.nombre}
-            className="h-10 w-10 shrink-0 ring-2 ring-white"
-          />
+        {tx.photo_url && (
+          <SafeImage src={tx.photo_url} alt="foto" rounded className="h-10 w-10 shrink-0 ring-2 ring-white" />
         )}
       </div>
-
-      {item.estado === "recibido" && item.fotoConfirmacion && (
-        <div className="border-t border-border bg-cream/70 p-3">
-          <div className="flex gap-3">
-            <SafeImage
-              src={item.fotoConfirmacion}
-              alt={`Foto enviada por ${item.walkerNombre}`}
-              className="h-20 w-20 shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-extrabold uppercase tracking-wider text-ink-soft">
-                {item.walkerNombre.split(" ")[0]} dice
-              </div>
-              <p className="mt-0.5 text-[13px] leading-snug text-ink">"{item.mensajeCuidador}"</p>
-            </div>
-          </div>
+      {tx.walker_id && (
+        <div className="border-t border-border px-4 py-2">
           <Link
             to="/chat/$id"
-            params={{ id: item.walkerId }}
+            params={{ id: tx.walker_id }}
             search={{ q: "", modo: "planificado" }}
-            className="mt-3 block w-full rounded-full border border-border bg-white py-2 text-center text-xs font-extrabold text-ink"
+            className="block w-full rounded-full border border-border bg-white py-2 text-center text-xs font-extrabold text-ink"
           >
             Abrir conversación
           </Link>
@@ -213,67 +222,59 @@ function CardEnviado({ item }: { item: TreatEnviado }) {
   );
 }
 
-function CardRecibido({ item }: { item: TreatRecibido }) {
+function CardEarned({ tx }: { tx: TxRow }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="card-soft flex items-center gap-3 p-4"
-    >
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="card-soft flex items-center gap-3 p-4">
       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-3xl">
-        {item.emoji}
+        {tx.emoji ?? "🎁"}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <div className="truncate font-extrabold text-ink">{item.nombre}</div>
-          {item.cantidad ? (
-            <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-extrabold text-white">
-              +{item.cantidad} 🦴
-            </span>
-          ) : null}
+          <div className="truncate font-extrabold text-ink">{tx.label ?? "Treats recibidos"}</div>
+          <span className="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-extrabold text-white">
+            +{tx.delta} 🦴
+          </span>
         </div>
-        <p className="mt-0.5 text-[12px] leading-snug text-ink-soft">{item.descripcion}</p>
-        <div className="mt-1 text-[11px] text-ink-soft">
-          De <span className="font-bold text-ink">{item.deNombre}</span> · {item.fechaLabel}
-        </div>
+        <div className="mt-1 text-[11px] text-ink-soft">{formatFecha(tx.created_at)}</div>
       </div>
     </motion.div>
   );
 }
 
-function CardCanje({ item }: { item: Canje }) {
+function CardCanje({ redemption }: { redemption: RedemptionRow }) {
+  const producto = redemption.products;
+  const partner = producto?.partners;
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="card-soft p-4"
-    >
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="card-soft p-4">
       <div className="flex items-center gap-3">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cream-deep text-3xl">
-          {item.emoji}
+          {producto?.emoji ?? "📦"}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="truncate font-extrabold text-ink">{item.productoNombre}</div>
+            <div className="truncate font-extrabold text-ink">{producto?.nombre ?? "Producto"}</div>
             <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-extrabold text-brand">
-              –{item.costoTreats} 🦴
+              –{redemption.costo_treats} 🦴
             </span>
           </div>
-          <div className="mt-0.5 text-xs text-ink-soft">
-            <span className="font-bold text-ink">{item.marca}</span> · {item.fechaLabel}
-          </div>
+          {partner && (
+            <div className="mt-0.5 text-xs text-ink-soft">
+              <span className="font-bold text-ink">{partner.nombre}</span>
+            </div>
+          )}
+          <div className="mt-0.5 text-[11px] text-ink-soft">{formatFecha(redemption.created_at)}</div>
           <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-extrabold">
-            {item.estado === "entregado" ? (
+            {redemption.estado === "entregado" ? (
               <span className="rounded-full bg-brand-soft px-2 py-0.5 text-brand">Entregado ✓</span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-coral-soft px-2 py-0.5 text-coral">
-                <ArrowUpRight className="h-3 w-3" /> En camino
-              </span>
+              <span className="rounded-full bg-coral-soft px-2 py-0.5 text-coral">En camino 📦</span>
             )}
           </div>
         </div>
       </div>
-      <p className="mt-2 text-[11px] text-ink-soft">📦 {item.direccion}</p>
+      {redemption.direccion && (
+        <p className="mt-2 text-[11px] text-ink-soft">📦 {redemption.direccion}</p>
+      )}
     </motion.div>
   );
 }

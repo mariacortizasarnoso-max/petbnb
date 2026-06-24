@@ -29,13 +29,16 @@ function Detalle() {
       <Header back title={walker.nombre} />
       <main className="mx-auto max-w-md">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative">
-          <div className="relative h-48 overflow-hidden">
-            <SafeImage
-              src={walker.galeria[0]}
-              alt={`${walker.nombre} paseando`}
-              fallbackText={walker.nombre}
-              className="h-full w-full rounded-none"
-            />
+          <div className="relative h-48 overflow-hidden bg-gradient-to-br from-brand to-brand-dark">
+            {walker.galeria[0] && (
+              <img
+                src={walker.galeria[0]}
+                alt={`${walker.nombre} paseando`}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cream" />
           </div>
           <div className="-mt-12 px-5">
