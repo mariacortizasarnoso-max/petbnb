@@ -31,9 +31,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
       if (data.session) {
-        setSession(data.session);
-        setLoading(false);
-        return;
+        // Valida la sesión contra el servidor: si el usuario ya no existe
+        // (p. ej. fue borrado), getUser falla → la descartamos y abrimos una
+        // nueva. Evita quedarse atascado con un token huérfano (no se puede
+        // reservar ni chatear hasta que caduca).
+        const { error: userErr } = await supabase.auth.getUser();
+        if (!active) return;
+        if (!userErr) {
+          setSession(data.session);
+          setLoading(false);
+          return;
+        }
+        await supabase.auth.signOut();
       }
       const { data: anon, error } = await supabase.auth.signInAnonymously();
       if (!active) return;
