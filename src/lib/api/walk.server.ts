@@ -65,5 +65,22 @@ export const closeWalk = createServerFn({ method: "POST" })
     });
     if (msgErr) throw msgErr;
 
+    // Acreditar treats al dueño por el paseo completado (idempotente con bookingId).
+    // Si falla, se loguea pero no propaga: el cierre del paseo no debe depender del ledger.
+    try {
+      const { TREATS_POR_PASEO } = await import("@/lib/api/treats.server");
+      await admin.rpc("apply_treat_tx", {
+        p_user: booking.user_id,
+        p_delta: TREATS_POR_PASEO,
+        p_kind: "paseo",
+        p_idempotency_key: `paseo-${booking.id}`,
+        p_ref: booking.id,
+        p_label: "Paseo completado 🐾",
+        p_emoji: "🦴",
+      });
+    } catch (earnErr) {
+      console.warn("petbnb: no se pudieron acreditar treats por el paseo —", earnErr);
+    }
+
     return { ok: true };
   });
