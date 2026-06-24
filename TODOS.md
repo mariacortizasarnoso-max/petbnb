@@ -69,13 +69,15 @@ Estado EPIC: [x] **Cerrada y en `main` (producción). Verificada e2e en producci
 
 ---
 
-## EPIC 4 — Economía de treats · Responsable: ______
+## EPIC 4 — Economía de treats · Responsable: Jorge
 
 Saldo real (ganar/regalar/canjear), sin negativos, pago simulado. Autónoma (solo necesita EPIC 0).
 
-- [ ] **U8** — Ledger/saldo de treats server-authoritative (guard de no-negativo, idempotencia); `sendGift`, `redeemProduct`, `earn`, `getBalance`; cablear `treats.$id`, `canjear.$id`, `tienda`, `mis-treats`, `completado`, `PaymentMethodSelector`
+- [x] **U8** — Ledger/saldo de treats server-authoritative (guard de no-negativo, idempotencia); `sendGift`, `redeemProduct`, `earn`, `getBalance`; cableado `treats.$id`, `canjear.$id`, `tienda`, `mis-treats`, `completado.$id`. Pool de matching migrado de array mock a tabla `walkers` de DB (handoff U5).
 
-Estado EPIC: [ ] Cerrada y en `development`
+> U8: `treats.server.ts` expone `getBalanceServer`, `getTransactionsServer`, `sendGiftServer` (kind='gift', guard de no-negativo vía `apply_treat_tx`), `redeemProductServer` (descuento + insert en `redemptions`). `closeWalk` acredita +50 treats al dueño al completar el paseo (idempotente: `paseo-{bookingId}`). Hooks `useTreats` y `useProducts` con React Query. `mis-treats` lee historial real de `treat_transactions` + `redemptions`. Catálogo de treats y partners/products desde DB. Pago con tarjeta sigue simulado (sin cargo en ledger). Secretos verificados: `SERVICE_ROLE_KEY` y `ANTHROPIC_API_KEY` ausentes del bundle estático.
+
+Estado EPIC: [x] **Cerrada y en `main` (producción). PR #12 mergeado el 2026-06-24.**
 
 ---
 
@@ -88,6 +90,20 @@ Estado EPIC: [ ] Cerrada y en `development`
 | 3º | apoyo / pruebas | EPIC 3 — Reservas y chat |
 
 Alternativa por capas: **A = backend** (EPIC 0 + 1 + 4) · **B = pantallas de usuario** (EPIC 2 + 3).
+
+---
+
+## Fixes UX mobile — 2026-06-24 · PR #13→#14 · Responsable: Jorge
+
+Revisión manual del flujo completo (matching → reserva) en móvil.
+
+- [x] Home: label, placeholder y helper text guían al usuario con los 4 campos clave del matching (raza, carácter, servicio, cuándo)
+- [x] Viewport desplazado: `overflow-x: hidden` en `html`/`body`
+- [x] Badge "Mejor match": de `absolute` (solapaba ScoreRing) a barra full-width consistente con modo SOS
+- [x] Perfil paseador: BottomNav oculta en `/paseador/` → botón Reservar visible; banner con degradado de fallback en lugar de iniciales
+- [x] Chat iOS: input `text-base` (16px) para evitar zoom automático de Safari
+
+Estado: [x] **En `main` (producción). PR #14 mergeado el 2026-06-24.**
 
 ---
 

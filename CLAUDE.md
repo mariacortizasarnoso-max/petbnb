@@ -32,8 +32,8 @@ bun run format       # prettier --write
 ## Ramas y despliegue (IMPORTANTE)
 
 - **`main` = producción.** Lo despliega **Vercel** automáticamente en cada merge. Todo lo que llegue aquí sale a producción.
-- **`development`** = sincronización con **Lovable** (se usó para prototipar). No empujes aquí el trabajo de código de producción.
-- **Flujo de trabajo:** rama de feature → PR contra **`main`** → merge → Vercel redespliega.
+- **`development`** = rama de integración. Las features van aquí primero para revisión antes de pasar a `main`.
+- **Flujo de trabajo:** rama de feature → PR contra **`development`** → revisión → PR `development` → `main` → Vercel redespliega.
 - Nunca hago `git push` ni toco `main` sin que el usuario lo pida explícitamente.
 
 > Nota: el `README.md` es de la fase de prototipo y describe los roles de las ramas al revés (dice que `main` es "referencia"). La realidad operativa actual es la de aquí: **`main` es producción desplegada por Vercel**.
@@ -86,12 +86,13 @@ TODOS.md         # reparto de trabajo por EPICs
 
 ## Estado del proyecto
 
-Al **2026-06-22**. Producción en `https://petbnb-ashy.vercel.app/`.
+Al **2026-06-24**. Producción en `https://petbnb-ashy.vercel.app/`.
 
 - **EPIC 0 (Fundación): COMPLETA.** Esquema en Supabase (13 tablas, RLS, `apply_treat_tx` con saldo materializado en `treat_balances`, seed de 12 paseadores). Vitest montado.
 - **EPIC 1 (Matching con Claude): COMPLETA.** Server function `matchWalkers` con fallback determinista (`src/lib/matching.ts`). Usa Claude si `ANTHROPIC_API_KEY` está en Vercel; si no, cae al determinista.
 - **EPIC 2 (Identidad y paseadores): COMPLETA y verificada en producción.** Sesión anónima silenciosa (`useAuth`/`AuthProvider`), perfil + perro (`/perfil`), paseadores y reseñas desde Postgres (`useWalkers`/`useWalker`).
 - **EPIC 3 (Reservas y chat): COMPLETA y verificada en producción.** Reservas persistentes + `closeWalk` (cierre server-side con mensaje del cuidador), chat persistente + auto-respuesta (`sendMessage`). Hooks `useBookings`/`useChat`.
-- **EPIC 4 (Economía de treats): pendiente.** Único bloque del MVP sin hacer; ahí se migrará `src/data/chatStore.ts` (aún usado por `treats.$id`).
+- **EPIC 4 (Economía de treats): COMPLETA y en producción (PR #12, 2026-06-24).** Ledger server-authoritative, `sendGift`/`redeemProduct`/`earn`/`getBalance`, hooks `useTreats`/`useProducts`. `chatStore.ts` migrado.
+- **MVP COMPLETO.** Todas las EPICs (0–4) en producción. Fixes de UX mobile aplicados el 2026-06-24 (PR #13→#14): input guiado, overflow-x, badge match, botón reservar visible, zoom iOS.
 - **Deploy en Vercel: funcionando** (producción + preview). Requiere en Vercel: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (la usan los server fns) y `ANTHROPIC_API_KEY`. Las **sesiones anónimas** deben estar activadas en Supabase (Authentication → Allow anonymous sign-ins). Deployment Protection **desactivada** para que la app sea pública.
 - Planes y reparto: `docs/plans/` y `TODOS.md`.
