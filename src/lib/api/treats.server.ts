@@ -16,7 +16,29 @@ const sendGiftSchema = z.object({
   label: z.string().optional(),
   emoji: z.string().optional(),
   note: z.string().optional(),
+  // Para el agradecimiento del cuidador en el chat (server-side):
+  treatNombre: z.string().optional(),
+  perro: z.string().optional(),
 });
+
+// Fotos de respaldo para el agradecimiento del cuidador (si el paseador no
+// tuviera galería). Mismo banco que el chat.
+const FOTOS_AGRADECIMIENTO = [
+  "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=900&q=70",
+  "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=900&q=70",
+  "https://images.unsplash.com/photo-1450778869180-41d0601e046e?auto=format&fit=crop&w=900&q=70",
+];
+
+function mensajeAgradecimiento(first: string, treatNombre?: string, perro?: string): string {
+  const p = perro && perro !== "tu peludo" ? perro : "tu peludo";
+  const t = treatNombre ? treatNombre.toLowerCase() : "el detalle";
+  const variantes = [
+    `¡Mil gracias por ${t}! 🦴 ${p} lo ha disfrutado un montón, te dejo foto 📸`,
+    `¡Qué detallazo! ${p} ha alucinado con ${t}. Mira qué cara 😍`,
+    `Gracias de corazón. ${p} y yo te mandamos un besito 💚 Aquí la prueba 📸`,
+  ];
+  return variantes[Math.floor(Math.random() * variantes.length)];
+}
 
 const redeemSchema = z.object({
   userId: z.string().uuid(),
@@ -100,6 +122,48 @@ export const sendGiftServer = createServerFn({ method: "POST" })
           return { ok: false, reason: "insufficient_balance" };
         }
         throw error;
+      }
+
+      // Agradecimiento del cuidador en el chat real (DB, persistente). Best-effort:
+      // si falla, el regalo ya se hizo, no rompemos.
+      try {
+        const { data: walker } = await admin
+          .from("walkers")
+          .select("nombre, galeria")
+          .eq("id", data.walkerId)
+          .maybeSingle();
+        const first = (walker?.nombre ?? "").split(" ")[0] || "El cuidador";
+
+        let threadId: string | null = null;
+        const { data: thread } = await admin
+          .from("chat_threads")
+          .select("id")
+          .eq("user_id", data.userId)
+          .eq("walker_id", data.walkerId)
+          .maybeSingle();
+        threadId = thread?.id ?? null;
+        if (!threadId) {
+          const { data: created } = await admin
+            .from("chat_threads")
+            .insert({ user_id: data.userId, walker_id: data.walkerId })
+            .select("id")
+            .single();
+          threadId = created?.id ?? null;
+        }
+
+        if (threadId) {
+          const galeria = (walker?.galeria ?? []).filter(Boolean);
+          const pool = galeria.length ? galeria : FOTOS_AGRADECIMIENTO;
+          const foto = pool[Math.floor(Math.random() * pool.length)];
+          await admin.from("chat_messages").insert({
+            thread_id: threadId,
+            de: "ellos",
+            texto: mensajeAgradecimiento(first, data.treatNombre, data.perro),
+            foto,
+          });
+        }
+      } catch (chatErr) {
+        console.warn("petbnb: no se pudo escribir el agradecimiento en chat —", chatErr);
       }
 
       return { ok: true, newBalance: newBalance as number };
