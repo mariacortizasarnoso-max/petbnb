@@ -5,10 +5,9 @@ import { Check, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
-import { useBalance, useInvalidateTreats, EUR_POR_TREAT } from "@/hooks/useTreats";
+import { useBalance, useInvalidateTreats } from "@/hooks/useTreats";
 import { useProduct, usePartners } from "@/hooks/useProducts";
 import { redeemProductServer } from "@/lib/api/treats.server";
-import { PaymentMethodSelector, type Metodo } from "@/components/PaymentMethodSelector";
 
 export const Route = createFileRoute("/canjear/$id")({
   component: Canjear,
@@ -29,16 +28,14 @@ function Canjear() {
   const partner = partners.find((p) => p.id === producto?.partnerId);
 
   const [paso, setPaso] = useState<Paso>("confirmar");
-  const [metodo, setMetodo] = useState<Metodo>("treats");
   const [direccion] = useState("Calle Fuencarral 42, 3.º B · 28004 Madrid");
   // Clave de idempotencia estable: se genera una vez por intento de canje (al
   // montar la pantalla), no por clic. Así un doble-clic o reintento NO cobra dos
   // veces (apply_treat_tx ignora la repetición de la misma clave).
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
-  // Inicializar metodo cuando llega el saldo y el producto
   const costoTreats = producto?.costoTreats ?? 0;
-  const costoEuros = +(costoTreats * EUR_POR_TREAT).toFixed(2);
+  const puede = saldo >= costoTreats;
 
   if (loadingProducto) {
     return (
@@ -65,32 +62,26 @@ function Canjear() {
   }
 
   const confirmar = async () => {
-    if (metodo === "treats") {
-      if (!user?.id) {
-        toast.error("Necesitas una cuenta para canjear");
-        return;
-      }
-      setPaso("procesando");
-      // No mandamos el coste: lo valida el servidor leyéndolo de `products`.
-      const result = await redeemProductServer({
-        data: {
-          userId: user.id,
-          productId: producto.id,
-          direccion,
-          idempotencyKey,
-        },
-      });
-      if (!result.ok) {
-        setPaso("sin_saldo");
-        return;
-      }
-      invalidateTreats(user.id);
-      setPaso("exito");
-    } else {
-      // Pago con tarjeta simulado — sin llamada al ledger
-      setPaso("procesando");
-      setTimeout(() => setPaso("exito"), 1400);
+    if (!user?.id) {
+      toast.error("Necesitas una cuenta para canjear");
+      return;
     }
+    setPaso("procesando");
+    // Solo treats. No mandamos el coste: lo valida el servidor leyéndolo de `products`.
+    const result = await redeemProductServer({
+      data: {
+        userId: user.id,
+        productId: producto.id,
+        direccion,
+        idempotencyKey,
+      },
+    });
+    if (!result.ok) {
+      setPaso("sin_saldo");
+      return;
+    }
+    invalidateTreats(user.id);
+    setPaso("exito");
   };
 
   return (
@@ -147,27 +138,34 @@ function Canjear() {
               </p>
             </div>
 
-            <PaymentMethodSelector
-              metodo={metodo}
-              onMetodo={setMetodo}
-              costoTreats={producto.costoTreats}
-              costoEuros={costoEuros}
-              saldo={saldo}
-            />
+            {/* Resumen en treats — en petbnb solo se canjea con treats */}
+            <div className="card-soft mt-4 p-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-ink-soft">Coste</span>
+                <span className="font-extrabold text-ink">{producto.costoTreats} 🦴</span>
+              </div>
+              <div className="mt-1.5 flex items-center justify-between text-sm">
+                <span className="text-ink-soft">Tu saldo</span>
+                <span className={`font-extrabold ${puede ? "text-ink" : "text-coral"}`}>
+                  {saldo} 🦴
+                </span>
+              </div>
+            </div>
 
-            {paso === "sin_saldo" && (
+            {(paso === "sin_saldo" || !puede) && (
               <p className="mt-3 text-center text-sm font-bold text-coral">
-                Saldo insuficiente para este canje.
+                {puede
+                  ? "Saldo insuficiente para este canje."
+                  : `Te faltan ${producto.costoTreats - saldo} 🦴. Completa reservas para ganar treats.`}
               </p>
             )}
 
             <button
               onClick={confirmar}
-              className="mt-5 w-full rounded-full bg-coral py-4 text-base font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98]"
+              disabled={!puede}
+              className="mt-5 w-full rounded-full bg-coral py-4 text-base font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98] disabled:bg-coral/40 disabled:shadow-none"
             >
-              {metodo === "treats"
-                ? `Canjear por ${producto.costoTreats} 🦴`
-                : `Pagar ${costoEuros.toFixed(2)} €`}
+              Canjear por {producto.costoTreats} 🦴
             </button>
             <p className="mt-2 text-center text-[11px] text-ink-soft">
               {partner

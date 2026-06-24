@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TiendaRouteImport } from './routes/tienda'
 import { Route as ResultadosRouteImport } from './routes/resultados'
 import { Route as ReservasRouteImport } from './routes/reservas'
 import { Route as PerfilRouteImport } from './routes/perfil'
@@ -17,7 +16,9 @@ import { Route as MisTreatsRouteImport } from './routes/mis-treats'
 import { Route as MensajesRouteImport } from './routes/mensajes'
 import { Route as BuscandoRouteImport } from './routes/buscando'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TiendaIndexRouteImport } from './routes/tienda.index'
 import { Route as TreatsIdRouteImport } from './routes/treats.$id'
+import { Route as TiendaPartnerIdRouteImport } from './routes/tienda.$partnerId'
 import { Route as ReservasIdRouteImport } from './routes/reservas.$id'
 import { Route as PaseoIdRouteImport } from './routes/paseo.$id'
 import { Route as PaseadorIdRouteImport } from './routes/paseador.$id'
@@ -26,11 +27,6 @@ import { Route as CompletadoIdRouteImport } from './routes/completado.$id'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as CanjearIdRouteImport } from './routes/canjear.$id'
 
-const TiendaRoute = TiendaRouteImport.update({
-  id: '/tienda',
-  path: '/tienda',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResultadosRoute = ResultadosRouteImport.update({
   id: '/resultados',
   path: '/resultados',
@@ -66,9 +62,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TiendaIndexRoute = TiendaIndexRouteImport.update({
+  id: '/tienda/',
+  path: '/tienda/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TreatsIdRoute = TreatsIdRouteImport.update({
   id: '/treats/$id',
   path: '/treats/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TiendaPartnerIdRoute = TiendaPartnerIdRouteImport.update({
+  id: '/tienda/$partnerId',
+  path: '/tienda/$partnerId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservasIdRoute = ReservasIdRouteImport.update({
@@ -115,7 +121,6 @@ export interface FileRoutesByFullPath {
   '/perfil': typeof PerfilRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
-  '/tienda': typeof TiendaRoute
   '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
@@ -123,7 +128,9 @@ export interface FileRoutesByFullPath {
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
   '/reservas/$id': typeof ReservasIdRoute
+  '/tienda/$partnerId': typeof TiendaPartnerIdRoute
   '/treats/$id': typeof TreatsIdRoute
+  '/tienda/': typeof TiendaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,7 +140,6 @@ export interface FileRoutesByTo {
   '/perfil': typeof PerfilRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
-  '/tienda': typeof TiendaRoute
   '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
@@ -141,7 +147,9 @@ export interface FileRoutesByTo {
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
   '/reservas/$id': typeof ReservasIdRoute
+  '/tienda/$partnerId': typeof TiendaPartnerIdRoute
   '/treats/$id': typeof TreatsIdRoute
+  '/tienda': typeof TiendaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,7 +160,6 @@ export interface FileRoutesById {
   '/perfil': typeof PerfilRoute
   '/reservas': typeof ReservasRouteWithChildren
   '/resultados': typeof ResultadosRoute
-  '/tienda': typeof TiendaRoute
   '/canjear/$id': typeof CanjearIdRoute
   '/chat/$id': typeof ChatIdRoute
   '/completado/$id': typeof CompletadoIdRoute
@@ -160,7 +167,9 @@ export interface FileRoutesById {
   '/paseador/$id': typeof PaseadorIdRoute
   '/paseo/$id': typeof PaseoIdRoute
   '/reservas/$id': typeof ReservasIdRoute
+  '/tienda/$partnerId': typeof TiendaPartnerIdRoute
   '/treats/$id': typeof TreatsIdRoute
+  '/tienda/': typeof TiendaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,7 +181,6 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/reservas'
     | '/resultados'
-    | '/tienda'
     | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
@@ -180,7 +188,9 @@ export interface FileRouteTypes {
     | '/paseador/$id'
     | '/paseo/$id'
     | '/reservas/$id'
+    | '/tienda/$partnerId'
     | '/treats/$id'
+    | '/tienda/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -190,7 +200,6 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/reservas'
     | '/resultados'
-    | '/tienda'
     | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
@@ -198,7 +207,9 @@ export interface FileRouteTypes {
     | '/paseador/$id'
     | '/paseo/$id'
     | '/reservas/$id'
+    | '/tienda/$partnerId'
     | '/treats/$id'
+    | '/tienda'
   id:
     | '__root__'
     | '/'
@@ -208,7 +219,6 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/reservas'
     | '/resultados'
-    | '/tienda'
     | '/canjear/$id'
     | '/chat/$id'
     | '/completado/$id'
@@ -216,7 +226,9 @@ export interface FileRouteTypes {
     | '/paseador/$id'
     | '/paseo/$id'
     | '/reservas/$id'
+    | '/tienda/$partnerId'
     | '/treats/$id'
+    | '/tienda/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -227,25 +239,19 @@ export interface RootRouteChildren {
   PerfilRoute: typeof PerfilRoute
   ReservasRoute: typeof ReservasRouteWithChildren
   ResultadosRoute: typeof ResultadosRoute
-  TiendaRoute: typeof TiendaRoute
   CanjearIdRoute: typeof CanjearIdRoute
   ChatIdRoute: typeof ChatIdRoute
   CompletadoIdRoute: typeof CompletadoIdRoute
   ConfirmarIdRoute: typeof ConfirmarIdRoute
   PaseadorIdRoute: typeof PaseadorIdRoute
   PaseoIdRoute: typeof PaseoIdRoute
+  TiendaPartnerIdRoute: typeof TiendaPartnerIdRoute
   TreatsIdRoute: typeof TreatsIdRoute
+  TiendaIndexRoute: typeof TiendaIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tienda': {
-      id: '/tienda'
-      path: '/tienda'
-      fullPath: '/tienda'
-      preLoaderRoute: typeof TiendaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/resultados': {
       id: '/resultados'
       path: '/resultados'
@@ -295,11 +301,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tienda/': {
+      id: '/tienda/'
+      path: '/tienda'
+      fullPath: '/tienda/'
+      preLoaderRoute: typeof TiendaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/treats/$id': {
       id: '/treats/$id'
       path: '/treats/$id'
       fullPath: '/treats/$id'
       preLoaderRoute: typeof TreatsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tienda/$partnerId': {
+      id: '/tienda/$partnerId'
+      path: '/tienda/$partnerId'
+      fullPath: '/tienda/$partnerId'
+      preLoaderRoute: typeof TiendaPartnerIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reservas/$id': {
@@ -374,14 +394,15 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilRoute: PerfilRoute,
   ReservasRoute: ReservasRouteWithChildren,
   ResultadosRoute: ResultadosRoute,
-  TiendaRoute: TiendaRoute,
   CanjearIdRoute: CanjearIdRoute,
   ChatIdRoute: ChatIdRoute,
   CompletadoIdRoute: CompletadoIdRoute,
   ConfirmarIdRoute: ConfirmarIdRoute,
   PaseadorIdRoute: PaseadorIdRoute,
   PaseoIdRoute: PaseoIdRoute,
+  TiendaPartnerIdRoute: TiendaPartnerIdRoute,
   TreatsIdRoute: TreatsIdRoute,
+  TiendaIndexRoute: TiendaIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
