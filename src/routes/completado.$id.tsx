@@ -8,6 +8,7 @@ import { SafeImage } from "@/components/SafeImage";
 import { WalkMapClient } from "@/components/WalkMapClient";
 import type { Walker } from "@/data/walkers";
 import { useWalker } from "@/hooks/useWalker";
+import { TREATS_POR_PASEO } from "@/hooks/useTreats";
 
 const search = z.object({
   perro: z.string().default("Nala"),
@@ -52,7 +53,7 @@ function Completado() {
 }
 
 function CompletadoView({ walker }: { walker: Walker }) {
-  const { perro, duracion, km } = Route.useSearch();
+  const { perro, duracion, km, bookingId } = Route.useSearch();
   const navigate = useNavigate();
   const [stars, setStars] = useState(0);
   const first = walker.nombre.split(" ")[0];
@@ -98,6 +99,18 @@ function CompletadoView({ walker }: { walker: Walker }) {
             </div>
           </div>
         </motion.div>
+
+        {bookingId && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-brand/10 px-4 py-3"
+          >
+            <span className="text-2xl">🦴</span>
+            <p className="text-sm font-extrabold text-brand">+{TREATS_POR_PASEO} treats ganados por este paseo</p>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
