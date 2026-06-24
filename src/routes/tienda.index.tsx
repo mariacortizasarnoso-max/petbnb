@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 
 import { Header } from "@/components/Header";
+import { PartnerLogo } from "@/components/PartnerLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useBalance } from "@/hooks/useTreats";
 import { usePartners, useProducts, type Partner } from "@/hooks/useProducts";
@@ -109,9 +110,7 @@ function PartnerCard({
         className="flex items-center gap-3 overflow-hidden rounded-2xl p-4 shadow-sm transition active:scale-[0.99]"
         style={{ background: partner.color, color: partner.textColor }}
       >
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-base font-black tracking-tight">
-          {partner.nombre.slice(0, 2).toLowerCase()}
-        </span>
+        <PartnerLogo partner={partner} className="h-12 w-12" textClassName="text-base" />
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">
             Partner

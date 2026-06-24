@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useBalance } from "@/hooks/useTreats";
 import { usePartners, useProducts } from "@/hooks/useProducts";
+import { PartnerLogo } from "@/components/PartnerLogo";
 
 export const Route = createFileRoute("/tienda/$partnerId")({
   component: PartnerLanding,
@@ -72,9 +73,7 @@ function PartnerLanding() {
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div className="mt-3 flex items-center gap-3">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl font-black tracking-tight">
-              {partner.nombre.slice(0, 2).toLowerCase()}
-            </span>
+            <PartnerLogo partner={partner} className="h-14 w-14" textClassName="text-xl" />
             <div className="min-w-0 flex-1">
               <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">
                 Partner de petbnb
