@@ -11,9 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBalance, useInvalidateTreats, TREATS_POR_EUR } from "@/hooks/useTreats";
 import { sendGiftServer } from "@/lib/api/treats.server";
 import { supabase } from "@/lib/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { pushMessage, ahora } from "@/data/chatStore";
-import { fotoAleatoria, mensajeAgradecimiento } from "@/data/treatsHistory";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const search = z.object({
   reserva: z.string().optional(),
@@ -57,6 +55,7 @@ function TreatsCatalogo() {
   const { data: treats = [], isPending: loadingTreats } = useTreatsDB();
   const { data: saldo = 0 } = useBalance(user?.id);
   const invalidateTreats = useInvalidateTreats();
+  const qc = useQueryClient();
 
   const [paso, setPaso] = useState<Paso>("catalogo");
   const [seleccion, setSeleccion] = useState<TreatItem | null>(null);
@@ -117,6 +116,8 @@ function TreatsCatalogo() {
         idempotencyKey,
         label: `Treat: ${sel.nombre}`,
         emoji: sel.emoji,
+        treatNombre: sel.nombre,
+        perro,
       },
     });
 
@@ -126,16 +127,16 @@ function TreatsCatalogo() {
       return;
     }
     invalidateTreats(user.id);
+    // El agradecimiento del cuidador se escribió en el chat real (server-side);
+    // refrescamos para que aparezca al abrir la conversación.
+    qc.invalidateQueries({ queryKey: ["chat", user.id, walker.id] });
+    qc.invalidateQueries({ queryKey: ["threads", user.id] });
 
     setTimeout(() => {
       setPaso("exito");
-      // Mensaje de agradecimiento del cuidador en el chat (sigue usando chatStore)
       setTimeout(() => {
-        const foto = fotoAleatoria();
-        const texto = mensajeAgradecimiento(first, sel.nombre, perro);
-        pushMessage(walker.id, { de: "ellos", texto, hora: ahora(), foto });
         toast.success(`${first} ha recibido tu treat 🦴`, {
-          description: texto,
+          description: "Te ha respondido por el chat con una foto 📸",
           duration: 5500,
         });
       }, 1600);
