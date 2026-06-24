@@ -45,7 +45,10 @@ function Paseo() {
         <div className="mx-auto max-w-md px-5 pt-20 text-center">
           <div className="text-5xl">🐾</div>
           <h1 className="mt-4 text-xl font-black text-ink">No encontramos este paseo</h1>
-          <Link to="/reservas" className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white">
+          <Link
+            to="/reservas"
+            className="mt-6 inline-flex rounded-full bg-brand px-5 py-3 text-sm font-bold text-white"
+          >
             Ir a mis reservas
           </Link>
         </div>
@@ -63,7 +66,7 @@ const ESTADOS = [
   { at: 0.85, text: "De vuelta a casa" },
 ];
 
-const TOTAL_MS = 25000;
+const TOTAL_MS = 9000; // paseo en vivo acelerado para la demo (antes 25 s)
 const CHECKIN_AT = 0.4;
 
 function PaseoView({ walker }: { walker: Walker }) {
@@ -84,7 +87,7 @@ function PaseoView({ walker }: { walker: Walker }) {
       const dt = Date.now() - startRef.current;
       const p = Math.min(1, dt / TOTAL_MS);
       setProgress(p);
-      setElapsed(Math.floor((p * duracion * 60)));
+      setElapsed(Math.floor(p * duracion * 60));
       if (!checkinShown.current && p > CHECKIN_AT) {
         checkinShown.current = true;
         setCheckin(true);
@@ -132,10 +135,18 @@ function PaseoView({ walker }: { walker: Walker }) {
 
       <div className="mx-auto max-w-md px-3 pt-1">
         <div className="card-soft flex items-center gap-3 p-3">
-          <SafeImage src={walker.foto} alt={walker.nombre} rounded fallbackText={walker.nombre} className="h-11 w-11" />
+          <SafeImage
+            src={walker.foto}
+            alt={walker.nombre}
+            rounded
+            fallbackText={walker.nombre}
+            className="h-11 w-11"
+          />
           <div className="min-w-0 flex-1">
             <div className="text-xs text-ink-soft">Paseo en curso</div>
-            <div className="truncate text-sm font-extrabold">{perro} con {first}</div>
+            <div className="truncate text-sm font-extrabold">
+              {perro} con {first}
+            </div>
           </div>
           <div className="text-right">
             <div className="font-mono text-base font-extrabold text-brand tabular-nums">
@@ -145,7 +156,10 @@ function PaseoView({ walker }: { walker: Walker }) {
           </div>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cream-deep">
-          <div className="h-full bg-brand transition-all duration-300" style={{ width: `${progress * 100}%` }} />
+          <div
+            className="h-full bg-brand transition-all duration-300"
+            style={{ width: `${progress * 100}%` }}
+          />
         </div>
       </div>
 
@@ -173,7 +187,8 @@ function PaseoView({ walker }: { walker: Walker }) {
                 className="h-44 w-full rounded-none"
               />
               <div className="p-3 text-sm">
-                <span className="font-bold">{first}:</span> «¡{perro} está disfrutando como nunca! 🥰»
+                <span className="font-bold">{first}:</span> «¡{perro} está disfrutando como nunca!
+                🥰»
               </div>
             </motion.div>
           )}
@@ -197,7 +212,13 @@ function PaseoView({ walker }: { walker: Walker }) {
             </div>
             <div className="mt-3">
               <button
-                onClick={() => navigate({ to: "/chat/$id", params: { id: walker.id }, search: { q: "", modo: "planificado" } })}
+                onClick={() =>
+                  navigate({
+                    to: "/chat/$id",
+                    params: { id: walker.id },
+                    search: { q: "", modo: "planificado" },
+                  })
+                }
                 className="flex w-full items-center justify-center gap-1.5 rounded-full bg-cream-deep py-2.5 text-sm font-bold text-ink"
               >
                 <MessageCircle className="h-4 w-4" /> Escribir a {first}
@@ -206,6 +227,14 @@ function PaseoView({ walker }: { walker: Walker }) {
             <p className="mt-3 text-center text-[11px] text-ink-soft">
               {first} cerrará el paseo cuando deje a {perro} en casa.
             </p>
+            <button
+              onClick={() => {
+                startRef.current = Date.now() - TOTAL_MS;
+              }}
+              className="mt-2 w-full text-center text-[11px] font-bold text-ink-soft underline"
+            >
+              Saltar al final del paseo
+            </button>
           </div>
         )}
 
@@ -223,16 +252,31 @@ function PaseoView({ walker }: { walker: Walker }) {
               </div>
               <div className="p-4">
                 <div className="flex items-start gap-3">
-                  <SafeImage src={walker.foto} alt={walker.nombre} rounded fallbackText={walker.nombre} className="h-11 w-11 shrink-0 ring-2 ring-white" />
+                  <SafeImage
+                    src={walker.foto}
+                    alt={walker.nombre}
+                    rounded
+                    fallbackText={walker.nombre}
+                    className="h-11 w-11 shrink-0 ring-2 ring-white"
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
                       <span className="font-extrabold text-ink">{first}</span>
-                      {walker.verificado && <BadgeCheck className="h-3.5 w-3.5 text-brand" fill="#d6ebe0" />}
+                      {walker.verificado && (
+                        <BadgeCheck className="h-3.5 w-3.5 text-brand" fill="#d6ebe0" />
+                      )}
                     </div>
                     <div className="mt-1 rounded-2xl rounded-tl-md bg-cream-deep/60 p-3 text-[14px] leading-snug text-ink">
-                      He dejado a {perro} en casa sana y salva 🐾<br />¡Se ha portado genial!
+                      He dejado a {perro} en casa sana y salva 🐾
+                      <br />
+                      ¡Se ha portado genial!
                     </div>
-                    <div className="mt-1 text-[10px] text-ink-soft">{new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</div>
+                    <div className="mt-1 text-[10px] text-ink-soft">
+                      {new Date().toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </div>
                 </div>
 
