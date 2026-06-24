@@ -62,6 +62,9 @@ function TreatsCatalogo() {
   const [paso, setPaso] = useState<Paso>("catalogo");
   const [seleccion, setSeleccion] = useState<TreatItem | null>(null);
   const [metodo, setMetodo] = useState<Metodo>("treats");
+  // Clave de idempotencia: se refresca al elegir un treat (un envío = una clave),
+  // estable ante doble-clic/reintento. No lleva Date.now() para no cobrar dos veces.
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   // tarjeta mock
   const [num, setNum] = useState("4242 4242 4242 4242");
@@ -75,7 +78,9 @@ function TreatsCatalogo() {
         <main className="mx-auto max-w-md px-5 pt-6 space-y-4">
           <div className="shimmer h-20 w-full rounded-3xl" />
           <div className="grid grid-cols-2 gap-3">
-            {[0, 1, 2, 3].map((i) => <div key={i} className="shimmer h-36 rounded-2xl" />)}
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="shimmer h-36 rounded-2xl" />
+            ))}
           </div>
         </main>
       </div>
@@ -98,6 +103,7 @@ function TreatsCatalogo() {
 
   const elegir = (t: TreatItem) => {
     setSeleccion(t);
+    setIdempotencyKey(crypto.randomUUID()); // nueva intención de envío
     const cTreats = t.precio * TREATS_POR_EUR;
     setMetodo(saldo >= cTreats ? "treats" : "tarjeta");
     setPaso("pago");
@@ -112,7 +118,6 @@ function TreatsCatalogo() {
         return;
       }
       setPaso("procesando");
-      const idempotencyKey = `${user.id}-gift-${walker.id}-${seleccion.id}-${Date.now()}`;
       const result = await sendGiftServer({
         data: {
           userId: user.id,
@@ -152,15 +157,28 @@ function TreatsCatalogo() {
 
   return (
     <div className="min-h-screen pb-20 bg-cream">
-      <Header back title={paso === "catalogo" ? "Treats para " + first : paso === "pago" ? "Pago" : "Enviando treat"} />
+      <Header
+        back
+        title={
+          paso === "catalogo" ? "Treats para " + first : paso === "pago" ? "Pago" : "Enviando treat"
+        }
+      />
       <main className="mx-auto max-w-md px-5">
         {paso === "catalogo" && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <div className="card-soft mt-1 flex items-center gap-3 p-4">
-              <SafeImage src={walker.foto} alt={walker.nombre} rounded fallbackText={walker.nombre} className="h-12 w-12 ring-2 ring-white shadow" />
+              <SafeImage
+                src={walker.foto}
+                alt={walker.nombre}
+                rounded
+                fallbackText={walker.nombre}
+                className="h-12 w-12 ring-2 ring-white shadow"
+              />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-extrabold text-ink">Enviar treat a {first}</div>
-                <div className="text-xs text-ink-soft">Un detalle para agradecer su cariño con {perro}.</div>
+                <div className="text-xs text-ink-soft">
+                  Un detalle para agradecer su cariño con {perro}.
+                </div>
               </div>
             </div>
 
@@ -171,9 +189,13 @@ function TreatsCatalogo() {
                   onClick={() => elegir(t)}
                   className="card-soft flex flex-col items-start p-4 text-left transition active:scale-[0.98] hover:border-brand/40"
                 >
-                  <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-cream-deep text-3xl">{t.emoji}</div>
+                  <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-cream-deep text-3xl">
+                    {t.emoji}
+                  </div>
                   <div className="font-extrabold text-ink leading-tight">{t.nombre}</div>
-                  <div className="mt-0.5 text-[12px] leading-snug text-ink-soft">{t.descripcion}</div>
+                  <div className="mt-0.5 text-[12px] leading-snug text-ink-soft">
+                    {t.descripcion}
+                  </div>
                   <div className="mt-2 inline-flex items-center gap-2">
                     <span className="rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-extrabold text-brand">
                       {t.precio * TREATS_POR_EUR} 🦴
@@ -184,10 +206,14 @@ function TreatsCatalogo() {
               ))}
             </div>
             <div className="mt-4 flex items-center justify-between rounded-2xl bg-cream-deep px-4 py-2.5">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-ink-soft">Tu saldo</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-ink-soft">
+                Tu saldo
+              </span>
               <span className="text-sm font-black text-ink">{saldo} 🦴</span>
             </div>
-            <p className="mt-3 text-center text-[11px] text-ink-soft">El 100 % se lo lleva {first}.</p>
+            <p className="mt-3 text-center text-[11px] text-ink-soft">
+              El 100 % se lo lleva {first}.
+            </p>
           </motion.div>
         )}
 
@@ -195,13 +221,24 @@ function TreatsCatalogo() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <div className="card-soft mt-1 overflow-hidden">
               <div className="flex items-center gap-3 bg-brand-soft/50 p-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">{seleccion.emoji}</div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-brand">Tu treat</div>
-                  <div className="truncate font-extrabold text-ink">{seleccion.nombre}</div>
-                  <div className="text-xs text-ink-soft">Para {first} · {costoTreats} 🦴 · {seleccion.precio} €</div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">
+                  {seleccion.emoji}
                 </div>
-                <button onClick={() => setPaso("catalogo")} className="text-xs font-bold text-brand">Cambiar</button>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-brand">
+                    Tu treat
+                  </div>
+                  <div className="truncate font-extrabold text-ink">{seleccion.nombre}</div>
+                  <div className="text-xs text-ink-soft">
+                    Para {first} · {costoTreats} 🦴 · {seleccion.precio} €
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPaso("catalogo")}
+                  className="text-xs font-bold text-brand"
+                >
+                  Cambiar
+                </button>
               </div>
             </div>
 
@@ -221,17 +258,26 @@ function TreatsCatalogo() {
                 <div className="mt-3 space-y-3">
                   <Field label="Número de tarjeta">
                     <input
-                      value={num} onChange={(e) => setNum(e.target.value)}
+                      value={num}
+                      onChange={(e) => setNum(e.target.value)}
                       inputMode="numeric"
                       className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink tracking-wider focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
                     />
                   </Field>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="Caducidad">
-                      <input value={exp} onChange={(e) => setExp(e.target.value)} className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20" />
+                      <input
+                        value={exp}
+                        onChange={(e) => setExp(e.target.value)}
+                        className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                      />
                     </Field>
                     <Field label="CVC">
-                      <input value={cvc} onChange={(e) => setCvc(e.target.value)} className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20" />
+                      <input
+                        value={cvc}
+                        onChange={(e) => setCvc(e.target.value)}
+                        className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                      />
                     </Field>
                   </div>
                 </div>
@@ -263,23 +309,38 @@ function TreatsCatalogo() {
         )}
 
         {paso === "exito" && seleccion && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative mt-6 overflow-visible">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="relative mt-6 overflow-visible"
+          >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-72 overflow-visible">
               {Array.from({ length: 22 }).map((_, i) => (
                 <motion.span
                   key={i}
                   initial={{ y: -10, x: (i - 11) * 14, opacity: 0, rotate: 0 }}
-                  animate={{ y: 320 + Math.random() * 80, opacity: [0, 1, 1, 0], rotate: (Math.random() - 0.5) * 720 }}
-                  transition={{ duration: 1.8 + Math.random() * 0.7, delay: Math.random() * 0.3, ease: "easeOut" }}
+                  animate={{
+                    y: 320 + Math.random() * 80,
+                    opacity: [0, 1, 1, 0],
+                    rotate: (Math.random() - 0.5) * 720,
+                  }}
+                  transition={{
+                    duration: 1.8 + Math.random() * 0.7,
+                    delay: Math.random() * 0.3,
+                    ease: "easeOut",
+                  }}
                   className="absolute left-1/2 text-2xl"
                   style={{ translate: "-50% 0" }}
-                >🦴</motion.span>
+                >
+                  🦴
+                </motion.span>
               ))}
             </div>
 
             <div className="card-soft p-6 text-center">
               <motion.div
-                initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 260, damping: 16 }}
                 className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-brand text-white shadow-xl"
               >
@@ -287,12 +348,19 @@ function TreatsCatalogo() {
               </motion.div>
               <h1 className="mt-4 text-xl font-black text-ink">¡Treat enviado a {first}! 🦴</h1>
               <p className="mt-1 text-sm text-ink-soft">
-                Le ha llegado <span className="font-bold text-ink">{seleccion.nombre}</span>. {first} te escribirá en un momento para agradecértelo.
+                Le ha llegado <span className="font-bold text-ink">{seleccion.nombre}</span>.{" "}
+                {first} te escribirá en un momento para agradecértelo.
               </p>
 
               <div className="mt-6 space-y-2">
                 <button
-                  onClick={() => navigate({ to: "/chat/$id", params: { id: walker.id }, search: { q: "", modo: "planificado" } })}
+                  onClick={() =>
+                    navigate({
+                      to: "/chat/$id",
+                      params: { id: walker.id },
+                      search: { q: "", modo: "planificado" },
+                    })
+                  }
                   className="w-full rounded-full bg-brand py-3.5 text-sm font-extrabold text-white"
                 >
                   Ver respuesta en el chat
