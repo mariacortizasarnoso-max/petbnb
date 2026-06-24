@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
-import { MARCAS, productosPorMarca, type Marca, type Producto } from "@/data/partners";
-import { getSaldo, subscribeTreats } from "@/data/treatsHistory";
+import { useAuth } from "@/hooks/useAuth";
+import { useBalance } from "@/hooks/useTreats";
+import { usePartners, useProducts, type Partner, type Product } from "@/hooks/useProducts";
 
 export const Route = createFileRoute("/tienda")({
   component: Tienda,
@@ -11,9 +11,12 @@ export const Route = createFileRoute("/tienda")({
 
 function Tienda() {
   const navigate = useNavigate();
-  const [, force] = useState(0);
-  useEffect(() => subscribeTreats(() => force((n) => n + 1)), []);
-  const saldo = getSaldo();
+  const { user } = useAuth();
+  const { data: saldo = 0 } = useBalance(user?.id);
+  const { data: partners = [], isPending: loadingPartners } = usePartners();
+  const { data: allProducts = [], isPending: loadingProducts } = useProducts();
+
+  const loading = loadingPartners || loadingProducts;
 
   return (
     <div className="min-h-screen pb-24 bg-cream">
@@ -40,9 +43,41 @@ function Tienda() {
           Canjea tus treats por productos de nuestras marcas partner. Te llegan a casa sin coste de envío.
         </p>
 
-        {MARCAS.map((m, i) => (
-          <BrandSection key={m.id} marca={m} index={i} saldo={saldo} onCanjear={(p) => navigate({ to: "/canjear/$id", params: { id: p.id } })} />
-        ))}
+        {loading && (
+          <div className="mt-6 space-y-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="space-y-3">
+                <div className="shimmer h-14 w-full rounded-2xl" />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="shimmer h-40 rounded-2xl" />
+                  <div className="shimmer h-40 rounded-2xl" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && partners.map((partner, i) => {
+          const productos = allProducts.filter((p) => p.partnerId === partner.id);
+          if (productos.length === 0) return null;
+          return (
+            <BrandSection
+              key={partner.id}
+              partner={partner}
+              products={productos}
+              index={i}
+              saldo={saldo}
+              onCanjear={(p) => navigate({ to: "/canjear/$id", params: { id: p.id } })}
+            />
+          );
+        })}
+
+        {!loading && partners.length === 0 && (
+          <div className="card-soft mt-6 py-10 text-center">
+            <div className="text-4xl">🛍️</div>
+            <p className="mt-3 text-sm text-ink-soft">La tienda estará disponible pronto.</p>
+          </div>
+        )}
 
         <p className="mt-8 text-center text-[11px] text-ink-soft">
           ¿Te falta saldo? Completa reservas y recibe treats de regalo 🐾
@@ -53,9 +88,8 @@ function Tienda() {
 }
 
 function BrandSection({
-  marca, index, saldo, onCanjear,
-}: { marca: Marca; index: number; saldo: number; onCanjear: (p: Producto) => void }) {
-  const productos = productosPorMarca(marca.id);
+  partner, products, index, saldo, onCanjear,
+}: { partner: Partner; index: number; products: Product[]; saldo: number; onCanjear: (p: Product) => void }) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * index }}
@@ -63,20 +97,20 @@ function BrandSection({
     >
       <div
         className="flex items-center gap-3 rounded-2xl px-4 py-3 shadow-sm"
-        style={{ background: marca.color, color: marca.textColor }}
+        style={{ background: partner.color, color: partner.textColor }}
       >
         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-base font-black tracking-tight">
-          {marca.nombre.slice(0, 2).toLowerCase()}
+          {partner.nombre.slice(0, 2).toLowerCase()}
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">Partner</div>
-          <div className="truncate text-lg font-black leading-tight">{marca.nombre}</div>
-          <div className="truncate text-[11px] opacity-90">{marca.tagline}</div>
+          <div className="truncate text-lg font-black leading-tight">{partner.nombre}</div>
+          <div className="truncate text-[11px] opacity-90">{partner.tagline}</div>
         </div>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
-        {productos.map((p) => {
+        {products.map((p) => {
           const puede = saldo >= p.costoTreats;
           return (
             <button

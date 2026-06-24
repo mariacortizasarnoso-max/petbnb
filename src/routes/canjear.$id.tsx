@@ -1,58 +1,93 @@
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Truck } from "lucide-react";
+import { toast } from "sonner";
 import { Header } from "@/components/Header";
-import { getProducto, getMarca, type Producto, type Marca } from "@/data/partners";
-import {
-  getSaldo, gastarSaldo, addCanje, subscribeTreats,
-  EUR_POR_TREAT,
-} from "@/data/treatsHistory";
+import { useAuth } from "@/hooks/useAuth";
+import { useBalance, useInvalidateTreats, EUR_POR_TREAT } from "@/hooks/useTreats";
+import { useProduct, usePartners } from "@/hooks/useProducts";
+import { redeemProductServer } from "@/lib/api/treats.server";
 import { PaymentMethodSelector, type Metodo } from "@/components/PaymentMethodSelector";
 
 export const Route = createFileRoute("/canjear/$id")({
-  loader: ({ params }) => {
-    const p = getProducto(params.id);
-    if (!p) throw notFound();
-    const marca = getMarca(p.marcaId)!;
-    return { producto: p, marca };
-  },
   component: Canjear,
 });
 
 type Paso = "confirmar" | "procesando" | "exito" | "sin_saldo";
 
 function Canjear() {
-  const { producto, marca } = Route.useLoaderData() as { producto: Producto; marca: Marca };
+  const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const [, force] = useState(0);
-  useEffect(() => subscribeTreats(() => force((n) => n + 1)), []);
-  const saldo = getSaldo();
+  const { data: producto, isPending: loadingProducto } = useProduct(id);
+  const { data: partners = [] } = usePartners();
+  const { data: saldo = 0 } = useBalance(user?.id);
+  const invalidateTreats = useInvalidateTreats();
+
+  const partner = partners.find((p) => p.id === producto?.partnerId);
 
   const [paso, setPaso] = useState<Paso>("confirmar");
-  const [metodo, setMetodo] = useState<Metodo>(saldo >= producto.costoTreats ? "treats" : "tarjeta");
+  const [metodo, setMetodo] = useState<Metodo>("treats");
   const [direccion] = useState("Calle Fuencarral 42, 3.º B · 28004 Madrid");
 
-  const costoEuros = +(producto.costoTreats * EUR_POR_TREAT).toFixed(2);
+  // Inicializar metodo cuando llega el saldo y el producto
+  const costoTreats = producto?.costoTreats ?? 0;
+  const costoEuros = +(costoTreats * EUR_POR_TREAT).toFixed(2);
 
-  const confirmar = () => {
+  if (loadingProducto) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Confirmar canje" />
+        <main className="mx-auto max-w-md px-5 pt-6 space-y-4">
+          <div className="shimmer h-28 w-full rounded-3xl" />
+          <div className="shimmer h-16 w-full rounded-2xl" />
+          <div className="shimmer h-28 w-full rounded-2xl" />
+        </main>
+      </div>
+    );
+  }
+
+  if (!producto) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Header back title="Confirmar canje" />
+        <div className="mx-auto max-w-md px-5 pt-20 text-center">
+          <p className="text-ink-soft">Producto no encontrado.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const confirmar = async () => {
     if (metodo === "treats") {
-      const ok = gastarSaldo(producto.costoTreats);
-      if (!ok) { setPaso("sin_saldo"); return; }
-    }
-    setPaso("procesando");
-    setTimeout(() => {
-      addCanje({
-        productoId: producto.id,
-        productoNombre: producto.nombre,
-        marca: marca.nombre,
-        emoji: producto.emoji,
-        costoTreats: producto.costoTreats,
-        direccion,
+      if (!user?.id) {
+        toast.error("Necesitas una cuenta para canjear");
+        return;
+      }
+      setPaso("procesando");
+      const idempotencyKey = `${user.id}-redeem-${producto.id}-${Date.now()}`;
+      const result = await redeemProductServer({
+        data: {
+          userId: user.id,
+          productId: producto.id,
+          costoTreats: producto.costoTreats,
+          direccion,
+          idempotencyKey,
+        },
       });
+      if (!result.ok) {
+        setPaso("sin_saldo");
+        return;
+      }
+      invalidateTreats(user.id);
       setPaso("exito");
-    }, 1400);
+    } else {
+      // Pago con tarjeta simulado — sin llamada al ledger
+      setPaso("procesando");
+      setTimeout(() => setPaso("exito"), 1400);
+    }
   };
 
   return (
@@ -69,18 +104,20 @@ function Canjear() {
         {(paso === "confirmar" || paso === "sin_saldo") && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <div className="card-soft mt-1 overflow-hidden">
-              <div
-                className="flex items-center gap-3 p-4"
-                style={{ background: marca.color, color: marca.textColor }}
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-black">
-                  {marca.nombre.slice(0, 2).toLowerCase()}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">Partner</div>
-                  <div className="truncate font-black">{marca.nombre}</div>
+              {partner && (
+                <div
+                  className="flex items-center gap-3 p-4"
+                  style={{ background: partner.color, color: partner.textColor }}
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-black">
+                    {partner.nombre.slice(0, 2).toLowerCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">Partner</div>
+                    <div className="truncate font-black">{partner.nombre}</div>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex gap-3 p-4">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-cream-deep text-5xl">
                   {producto.emoji}
@@ -111,6 +148,12 @@ function Canjear() {
               saldo={saldo}
             />
 
+            {paso === "sin_saldo" && (
+              <p className="mt-3 text-center text-sm font-bold text-coral">
+                Saldo insuficiente para este canje.
+              </p>
+            )}
+
             <button
               onClick={confirmar}
               className="mt-5 w-full rounded-full bg-coral py-4 text-base font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98]"
@@ -118,7 +161,7 @@ function Canjear() {
               {metodo === "treats" ? `Canjear por ${producto.costoTreats} 🦴` : `Pagar ${costoEuros.toFixed(2)} €`}
             </button>
             <p className="mt-2 text-center text-[11px] text-ink-soft">
-              Recibirás un email de {marca.nombre} con el seguimiento.
+              {partner ? `Recibirás un email de ${partner.nombre} con el seguimiento.` : "Envío confirmado por email."}
             </p>
           </motion.div>
         )}
@@ -131,7 +174,7 @@ function Canjear() {
               className="h-12 w-12 rounded-full border-4 border-brand/20 border-t-brand"
             />
             <p className="mt-4 font-extrabold text-ink">Procesando canje…</p>
-            <p className="mt-1 text-sm text-ink-soft">{marca.nombre} ya está preparando tu pedido.</p>
+            <p className="mt-1 text-sm text-ink-soft">{partner?.nombre ?? "Tu partner"} ya está preparando tu pedido.</p>
           </div>
         )}
 
@@ -159,7 +202,8 @@ function Canjear() {
               </motion.div>
               <h1 className="mt-4 text-xl font-black text-ink">¡Canjeado! 📦</h1>
               <p className="mt-1 text-sm text-ink-soft">
-                <span className="font-bold text-ink">{producto.nombre}</span> ({marca.nombre}) te llegará a casa en unos días.
+                <span className="font-bold text-ink">{producto.nombre}</span>
+                {partner ? ` (${partner.nombre})` : ""} te llegará a casa en unos días.
               </p>
               <div className="mt-4 rounded-2xl bg-cream-deep p-3 text-left">
                 <div className="text-[10px] font-extrabold uppercase tracking-wider text-ink-soft">Enviado a</div>
