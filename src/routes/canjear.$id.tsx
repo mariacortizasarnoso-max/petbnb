@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Check, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
+import { PartnerLogo } from "@/components/PartnerLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useBalance, useInvalidateTreats } from "@/hooks/useTreats";
 import { useProduct, usePartners } from "@/hooks/useProducts";
@@ -101,9 +102,7 @@ function Canjear() {
                   className="flex items-center gap-3 p-4"
                   style={{ background: partner.color, color: partner.textColor }}
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-sm font-black">
-                    {partner.nombre.slice(0, 2).toLowerCase()}
-                  </span>
+                  <PartnerLogo partner={partner} className="h-10 w-10" textClassName="text-sm" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[10px] font-extrabold uppercase tracking-wider opacity-80">
                       Partner
