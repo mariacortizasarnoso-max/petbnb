@@ -3,7 +3,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Check, CreditCard, Lock } from "lucide-react";
+import { Check } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { useWalker } from "@/hooks/useWalker";
@@ -12,7 +12,6 @@ import { useBalance, useInvalidateTreats, TREATS_POR_EUR } from "@/hooks/useTrea
 import { sendGiftServer } from "@/lib/api/treats.server";
 import { supabase } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { PaymentMethodSelector, type Metodo } from "@/components/PaymentMethodSelector";
 import { pushMessage, ahora } from "@/data/chatStore";
 import { fotoAleatoria, mensajeAgradecimiento } from "@/data/treatsHistory";
 
@@ -61,15 +60,9 @@ function TreatsCatalogo() {
 
   const [paso, setPaso] = useState<Paso>("catalogo");
   const [seleccion, setSeleccion] = useState<TreatItem | null>(null);
-  const [metodo, setMetodo] = useState<Metodo>("treats");
   // Clave de idempotencia: se refresca al elegir un treat (un envío = una clave),
   // estable ante doble-clic/reintento. No lleva Date.now() para no cobrar dos veces.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
-
-  // tarjeta mock
-  const [num, setNum] = useState("4242 4242 4242 4242");
-  const [exp, setExp] = useState("12/27");
-  const [cvc, setCvc] = useState("123");
 
   if (loadingWalker || loadingTreats) {
     return (
@@ -100,52 +93,46 @@ function TreatsCatalogo() {
 
   const first = walker.nombre.split(" ")[0];
   const costoTreats = seleccion ? seleccion.precio * TREATS_POR_EUR : 0;
+  const puede = saldo >= costoTreats;
 
   const elegir = (t: TreatItem) => {
     setSeleccion(t);
     setIdempotencyKey(crypto.randomUUID()); // nueva intención de envío
-    const cTreats = t.precio * TREATS_POR_EUR;
-    setMetodo(saldo >= cTreats ? "treats" : "tarjeta");
     setPaso("pago");
   };
 
+  // En petbnb los treats se envían SOLO con tu saldo de treats (sin tarjeta).
   const pagar = async () => {
-    if (!seleccion) return;
-
-    if (metodo === "treats") {
-      if (!user?.id) {
-        toast.error("Necesitas una cuenta para pagar con treats");
-        return;
-      }
-      setPaso("procesando");
-      const result = await sendGiftServer({
-        data: {
-          userId: user.id,
-          walkerId: walker.id,
-          delta: costoTreats,
-          idempotencyKey,
-          label: `Treat: ${seleccion.nombre}`,
-          emoji: seleccion.emoji,
-        },
-      });
-
-      if (!result.ok) {
-        setPaso("pago");
-        toast.error("Saldo insuficiente. Te faltan " + (costoTreats - saldo) + " 🦴");
-        return;
-      }
-      invalidateTreats(user.id);
-    } else {
-      // Tarjeta simulada — sin cargo en el ledger
-      setPaso("procesando");
+    if (!seleccion || !user?.id) {
+      if (!user?.id) toast.error("Necesitas una cuenta para enviar treats");
+      return;
     }
+    const sel = seleccion;
+    setPaso("procesando");
+    const result = await sendGiftServer({
+      data: {
+        userId: user.id,
+        walkerId: walker.id,
+        delta: costoTreats,
+        idempotencyKey,
+        label: `Treat: ${sel.nombre}`,
+        emoji: sel.emoji,
+      },
+    });
+
+    if (!result.ok) {
+      setPaso("pago");
+      toast.error("Saldo insuficiente. Te faltan " + (costoTreats - saldo) + " 🦴");
+      return;
+    }
+    invalidateTreats(user.id);
 
     setTimeout(() => {
       setPaso("exito");
       // Mensaje de agradecimiento del cuidador en el chat (sigue usando chatStore)
       setTimeout(() => {
         const foto = fotoAleatoria();
-        const texto = mensajeAgradecimiento(first, seleccion.nombre, perro);
+        const texto = mensajeAgradecimiento(first, sel.nombre, perro);
         pushMessage(walker.id, { de: "ellos", texto, hora: ahora(), foto });
         toast.success(`${first} ha recibido tu treat 🦴`, {
           description: texto,
@@ -200,7 +187,6 @@ function TreatsCatalogo() {
                     <span className="rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-extrabold text-brand">
                       {t.precio * TREATS_POR_EUR} 🦴
                     </span>
-                    <span className="text-[11px] text-ink-soft">o {t.precio} €</span>
                   </div>
                 </button>
               ))}
@@ -230,7 +216,7 @@ function TreatsCatalogo() {
                   </div>
                   <div className="truncate font-extrabold text-ink">{seleccion.nombre}</div>
                   <div className="text-xs text-ink-soft">
-                    Para {first} · {costoTreats} 🦴 · {seleccion.precio} €
+                    Para {first} · {costoTreats} 🦴
                   </div>
                 </div>
                 <button
@@ -242,56 +228,32 @@ function TreatsCatalogo() {
               </div>
             </div>
 
-            <PaymentMethodSelector
-              metodo={metodo}
-              onMetodo={setMetodo}
-              costoTreats={costoTreats}
-              costoEuros={seleccion.precio}
-              saldo={saldo}
-            />
-
-            {metodo === "tarjeta" && (
-              <div className="card-soft mt-4 p-4">
-                <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider text-ink-soft">
-                  <CreditCard className="h-4 w-4" /> Datos de tarjeta
-                </div>
-                <div className="mt-3 space-y-3">
-                  <Field label="Número de tarjeta">
-                    <input
-                      value={num}
-                      onChange={(e) => setNum(e.target.value)}
-                      inputMode="numeric"
-                      className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink tracking-wider focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-                    />
-                  </Field>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Caducidad">
-                      <input
-                        value={exp}
-                        onChange={(e) => setExp(e.target.value)}
-                        className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-                      />
-                    </Field>
-                    <Field label="CVC">
-                      <input
-                        value={cvc}
-                        onChange={(e) => setCvc(e.target.value)}
-                        className="w-full rounded-2xl border border-border bg-cream/60 px-3 py-2.5 text-sm font-bold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-                      />
-                    </Field>
-                  </div>
-                </div>
-                <p className="mt-3 inline-flex items-center gap-1 text-[11px] text-ink-soft">
-                  <Lock className="h-3 w-3" /> Pago simulado, no se cobra nada.
-                </p>
+            {/* Solo treats — en petbnb se agradece con treats, sin tarjeta */}
+            <div className="card-soft mt-4 p-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-ink-soft">Cuesta</span>
+                <span className="font-extrabold text-ink">{costoTreats} 🦴</span>
               </div>
+              <div className="mt-1.5 flex items-center justify-between text-sm">
+                <span className="text-ink-soft">Tu saldo</span>
+                <span className={`font-extrabold ${puede ? "text-ink" : "text-coral"}`}>
+                  {saldo} 🦴
+                </span>
+              </div>
+            </div>
+
+            {!puede && (
+              <p className="mt-3 text-center text-sm font-bold text-coral">
+                Te faltan {costoTreats - saldo} 🦴. Completa reservas para ganar treats.
+              </p>
             )}
 
             <button
               onClick={pagar}
-              className="mt-5 w-full rounded-full bg-coral py-4 text-base font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98]"
+              disabled={!puede}
+              className="mt-5 w-full rounded-full bg-coral py-4 text-base font-extrabold text-white shadow-[0_10px_24px_-10px_rgba(255,122,89,0.7)] active:scale-[0.98] disabled:bg-coral/40 disabled:shadow-none"
             >
-              {metodo === "treats" ? `Pagar con ${costoTreats} 🦴` : `Pagar ${seleccion.precio} €`}
+              Enviar treat por {costoTreats} 🦴
             </button>
           </motion.div>
         )}
@@ -383,14 +345,5 @@ function TreatsCatalogo() {
         )}
       </main>
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-ink-soft">{label}</span>
-      <div className="mt-1">{children}</div>
-    </label>
   );
 }
