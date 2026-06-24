@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useChildMatches, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BadgeCheck, ChevronRight, MessageCircle, MapPin, Star } from "lucide-react";
@@ -22,10 +22,13 @@ export const Route = createFileRoute("/reservas")({
 type Tab = "proximas" | "pasadas";
 
 function Reservas() {
+  const childMatches = useChildMatches();
   const [tab, setTab] = useState<Tab>("proximas");
   const { user } = useAuth();
   const { proximas, pasadas, isPending } = useBookings(user?.id);
   const lista = tab === "proximas" ? proximas : pasadas;
+
+  if (childMatches.length > 0) return <Outlet />;
 
   return (
     <div className="pb-28">
