@@ -15,6 +15,14 @@ vi.mock("@anthropic-ai/sdk", () => ({
   },
 }));
 
+// Mock Supabase client — overridden per test.
+const mockSupabaseSelect = vi.fn();
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: () => ({
+    from: (_table: string) => ({ select: mockSupabaseSelect }),
+  }),
+}));
+
 // Import AFTER mocks are declared.
 import { WALKERS } from "@/data/walkers";
 import * as matchingModule from "@/lib/api/matching.server";
@@ -37,7 +45,12 @@ function claudeResponse(rankings: Array<{ walkerId: string; puntuacion: number; 
 
 beforeEach(() => {
   process.env.ANTHROPIC_API_KEY = "test-key";
+  process.env.VITE_SUPABASE_URL = "https://test.supabase.co";
+  process.env.VITE_SUPABASE_ANON_KEY = "test-anon-key";
   mockCreate.mockReset();
+  mockSupabaseSelect.mockReset();
+  // Default: DB devuelve el mismo array que el mock estático
+  mockSupabaseSelect.mockResolvedValue({ data: WALKERS, error: null });
   // Short timeout so T3 (timeout test) resolves quickly in real time
   matchingModule.matchingConfig.timeoutMs = 50;
 });
@@ -109,20 +122,13 @@ describe("handleMatchWalkers", () => {
   });
 
   it("T6 — pool SOS vacío: devuelve fallback sin error", async () => {
-    const { WALKERS: W } = await import("@/data/walkers");
-    const origDisp = W.map((w) => w.disponible_ahora);
-    const origDist = W.map((w) => w.distancia_km);
-    W.forEach((w) => {
-      w.disponible_ahora = false;
-      w.distancia_km = 5;
+    // Mockear DB para que devuelva walkers sin disponibilidad SOS
+    mockSupabaseSelect.mockResolvedValueOnce({
+      data: WALKERS.map((w) => ({ ...w, disponible_ahora: false, distancia_km: 5 })),
+      error: null,
     });
 
     const result = await handleMatchWalkers("urgente", "sos");
-
-    W.forEach((w, i) => {
-      w.disponible_ahora = origDisp[i];
-      w.distancia_km = origDist[i];
-    });
 
     expect(mockCreate).not.toHaveBeenCalled();
     expect(result.length).toBeGreaterThanOrEqual(0);
@@ -148,5 +154,54 @@ describe("handleMatchWalkers", () => {
     for (const m of result) {
       expect(m.matchedTags).toEqual([]);
     }
+  });
+
+  it("T9 — pool desde DB: usa walkers de Supabase en lugar del mock estático", async () => {
+    const dbWalker = {
+      id: "db-walker-test-1",
+      nombre: "DB Walker Test",
+      barrio: "Centro",
+      rating: 4.9,
+      tags: ["activo", "golden"],
+      disponible_ahora: true,
+      distancia_km: 0.5,
+      foto: "",
+      bio: "",
+      especialidades: [],
+      verificado: true,
+      anios_experiencia: 3,
+      num_resenas: 10,
+      paseos_completados: 50,
+      galeria: [],
+      nota_recogida: "",
+      tiene_perros: false,
+      texto_perros: "",
+      dias_no_disponibles: [],
+      ofrece_estancia: false,
+      precio_estancia_noche: null,
+      tiempo_respuesta: "30 min",
+    };
+    mockSupabaseSelect.mockResolvedValueOnce({ data: [dbWalker], error: null });
+    mockCreate.mockResolvedValueOnce(
+      claudeResponse([{ walkerId: "db-walker-test-1", puntuacion: 95, explicacion: "Desde DB" }])
+    );
+
+    const result = await handleMatchWalkers("perro activo", "planificado");
+
+    expect(result[0].walker.id).toBe("db-walker-test-1");
+    expect(result[0].walker.resenas).toEqual([]);
+  });
+
+  it("T10 — fallo de consulta DB: cae al array mock sin propagar error", async () => {
+    mockSupabaseSelect.mockResolvedValueOnce({ data: null, error: new Error("DB connection error") });
+    mockCreate.mockResolvedValueOnce(
+      claudeResponse([{ walkerId: REAL_ID, puntuacion: 80, explicacion: "Fallback al mock" }])
+    );
+
+    // No debe lanzar error; cae silenciosamente al array WALKERS mock
+    const result = await handleMatchWalkers("perro", "planificado");
+
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].walker.id).toBe(REAL_ID);
   });
 });

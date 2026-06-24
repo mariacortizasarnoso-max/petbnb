@@ -114,10 +114,55 @@ async function claudeMatch(pool: Walker[], q: string, modo: "planificado" | "sos
     }));
 }
 
-export async function handleMatchWalkers(q: string, modo: "planificado" | "sos"): Promise<Match[]> {
-  const { WALKERS } = await import("@/data/walkers");
+async function loadWalkersPool(): Promise<Walker[]> {
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env.VITE_SUPABASE_URL;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) throw new Error("Faltan VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY");
 
-  let pool = WALKERS;
+  const client = createClient(url, anonKey);
+  const { data, error } = await client
+    .from("walkers")
+    .select("id, nombre, barrio, rating, tags, disponible_ahora, distancia_km, foto, bio, especialidades, verificado, anios_experiencia, num_resenas, paseos_completados, galeria, nota_recogida, tiene_perros, texto_perros, dias_no_disponibles, ofrece_estancia, precio_estancia_noche, tiempo_respuesta");
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    nombre: row.nombre,
+    barrio: row.barrio ?? "",
+    rating: row.rating,
+    tags: row.tags ?? [],
+    disponible_ahora: row.disponible_ahora,
+    distancia_km: row.distancia_km,
+    foto: row.foto ?? "",
+    bio: row.bio ?? "",
+    especialidades: row.especialidades ?? [],
+    verificado: row.verificado,
+    anios_experiencia: row.anios_experiencia,
+    num_resenas: row.num_resenas,
+    paseos_completados: row.paseos_completados,
+    galeria: row.galeria ?? [],
+    nota_recogida: row.nota_recogida ?? "",
+    tiene_perros: row.tiene_perros ?? false,
+    texto_perros: row.texto_perros ?? "",
+    dias_no_disponibles: row.dias_no_disponibles ?? [],
+    ofrece_estancia: row.ofrece_estancia ?? false,
+    precio_estancia_noche: row.precio_estancia_noche ?? undefined,
+    tiempo_respuesta: row.tiempo_respuesta ?? "",
+    resenas: [],
+  }));
+}
+
+export async function handleMatchWalkers(q: string, modo: "planificado" | "sos"): Promise<Match[]> {
+  let pool: Walker[];
+  try {
+    pool = await loadWalkersPool();
+  } catch {
+    const { WALKERS } = await import("@/data/walkers");
+    pool = WALKERS;
+  }
+
   if (modo === "sos") {
     pool = pool.filter((w) => w.disponible_ahora && w.distancia_km < 2);
   }
