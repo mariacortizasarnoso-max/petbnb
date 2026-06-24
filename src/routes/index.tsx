@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { Mic } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SafeImage } from "@/components/SafeImage";
 import { useWalkers } from "@/hooks/useWalkers";
@@ -26,6 +27,49 @@ function Home() {
   const goSearch = (mode: "planificado" | "sos") => {
     const q = text.trim() || "Mi perro necesita salir un rato";
     navigate({ to: "/buscando", search: { q, modo: mode } });
+  };
+
+  // Dictado por voz (Web Speech API). Aditivo: si el navegador no lo soporta,
+  // el botón no aparece y se escribe con normalidad.
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const SR =
+      (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown })
+        .SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
+    if (SR) setVoiceSupported(true);
+    return () => recognitionRef.current?.abort?.();
+  }, []);
+
+  const toggleVoz = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    if (listening) {
+      recognitionRef.current?.stop?.();
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec: any = new SR();
+    rec.lang = "es-ES";
+    rec.interimResults = true;
+    rec.continuous = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult = (e: any) => {
+      let t = "";
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+      setText(t);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    setText("");
+    setListening(true);
+    rec.start();
   };
 
   const { data: walkers = [], isPending } = useWalkers();
@@ -55,19 +99,44 @@ function Home() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="card-soft mt-6 p-4"
         >
-          <label htmlFor="dog" className="text-sm font-bold text-ink">
-            Cuéntame sobre tu perro y qué necesitas
-          </label>
-          <textarea
-            id="dog"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={PLACEHOLDER}
-            rows={5}
-            className="mt-2 w-full resize-none rounded-2xl border border-border bg-cream/60 p-3 text-[15px] leading-snug text-ink placeholder:text-ink-soft/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-          />
+          <div className="flex items-center justify-between">
+            <label htmlFor="dog" className="text-sm font-bold text-ink">
+              Cuéntame sobre tu perro y qué necesitas
+            </label>
+            {listening && (
+              <span className="flex items-center gap-1 text-[11px] font-extrabold text-coral">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-coral" /> Escuchando…
+              </span>
+            )}
+          </div>
+          <div className="relative mt-2">
+            <textarea
+              id="dog"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={PLACEHOLDER}
+              rows={5}
+              className="w-full resize-none rounded-2xl border border-border bg-cream/60 p-3 pr-16 text-[15px] leading-snug text-ink placeholder:text-ink-soft/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={toggleVoz}
+                aria-label={listening ? "Detener dictado" : "Dictar por voz"}
+                className={`absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full shadow-md transition active:scale-95 ${
+                  listening ? "animate-pulse bg-coral text-white" : "bg-brand text-white"
+                }`}
+              >
+                <Mic className="h-5 w-5" />
+              </button>
+            )}
+          </div>
           <div className="mt-1 flex items-center justify-between text-xs text-ink-soft">
-            <span>Incluye: raza, carácter, qué necesitas y cuándo.</span>
+            <span>
+              {voiceSupported
+                ? "Escríbelo, o pulsa 🎤 y descríbelo hablando."
+                : "Incluye: raza, carácter, qué necesitas y cuándo."}
+            </span>
             <span className={text.length >= 10 ? "text-brand font-bold" : ""}>{text.length}/10</span>
           </div>
           <button
