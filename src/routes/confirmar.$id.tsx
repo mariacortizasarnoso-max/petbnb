@@ -64,6 +64,12 @@ const FRANJAS: { id: Franja; label: string; hora: string }[] = [
 const DOW = ["L", "M", "X", "J", "V", "S", "D"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
+function extractDogName(q: string): string {
+  const m = q.match(/se\s+llama[da]?\s+([^\s,.:!?]+)/i)
+    ?? q.match(/llama[da]?\s+([^\s,.:!?]+)/i);
+  return m?.[1] ?? "";
+}
+
 function ConfirmarForm({ walker }: { walker: Walker }) {
   const { q, modo } = Route.useSearch();
   const navigate = useNavigate();
@@ -73,7 +79,7 @@ function ConfirmarForm({ walker }: { walker: Walker }) {
 
   const [paso, setPaso] = useState<1 | 2 | 3 | 4>(1);
   const [tipo, setTipo] = useState<Tipo>("paseo");
-  const [perro, setPerro] = useState("Nala");
+  const [perro, setPerro] = useState(() => extractDogName(q));
   const [confirming, setConfirming] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
 

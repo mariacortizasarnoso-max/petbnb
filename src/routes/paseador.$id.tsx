@@ -41,7 +41,7 @@ function Detalle() {
             )}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cream" />
           </div>
-          <div className="-mt-12 px-5">
+          <div className="relative z-10 -mt-12 px-5">
             <div className="flex items-end gap-3">
               <SafeImage
                 src={walker.foto}

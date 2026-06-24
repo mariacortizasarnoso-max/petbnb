@@ -1,11 +1,17 @@
 import { useState } from "react";
 
-// Logos de partners (marcas reales). Si un logo no cargara, el onError cae al
-// monograma de marca — cero riesgo de imagen rota en directo.
-const PARTNER_LOGOS: Record<string, string> = {
-  kiwoko: "https://www.google.com/s2/favicons?domain=kiwoko.com&sz=128",
-  drbimix: "https://www.google.com/s2/favicons?domain=drbimix.com&sz=128",
-  maikai: "https://www.google.com/s2/favicons?domain=maikaipets.com&sz=128",
+import maikaiLogo from "@/assets/maikai-pets.png";
+
+// Logos de partners (marcas reales). `chipBg` permite un fondo de marca cuando el
+// logo es blanco (Maikai). Si un logo no carga, el onError cae al monograma de
+// color — cero riesgo de imagen rota en directo.
+type LogoCfg = { src: string; chipBg?: string; fill?: boolean };
+
+const PARTNER_LOGOS: Record<string, LogoCfg> = {
+  kiwoko: { src: "https://www.google.com/s2/favicons?domain=kiwoko.com&sz=128" },
+  drbimix: { src: "https://www.google.com/s2/favicons?domain=drbimix.com&sz=128" },
+  // Logo real de Maikai (wordmark blanco) sobre su teal de marca, bundleado local.
+  maikai: { src: maikaiLogo, chipBg: "#3a8d88", fill: true },
 };
 
 type PartnerLite = { id: string; nombre: string };
@@ -20,18 +26,19 @@ export function PartnerLogo({
   textClassName?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const url = PARTNER_LOGOS[partner.id];
+  const logo = PARTNER_LOGOS[partner.id];
 
-  if (url && !failed) {
+  if (logo && !failed) {
     return (
       <span
-        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ${className}`}
+        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl ${className}`}
+        style={{ background: logo.chipBg ?? "#fff" }}
       >
         <img
-          src={url}
+          src={logo.src}
           alt={partner.nombre}
           onError={() => setFailed(true)}
-          className="h-3/5 w-3/5 object-contain"
+          className={`object-contain ${logo.fill ? "w-[82%]" : "h-3/5 w-3/5"}`}
           loading="lazy"
         />
       </span>
